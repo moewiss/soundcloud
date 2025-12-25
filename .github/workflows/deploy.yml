@@ -1,0 +1,95 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main  # Deploy when pushing to main branch
+      - master  # Also support master branch
+  workflow_dispatch:  # Allow manual deployment from GitHub Actions tab
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to project directory
+            cd /root/islamic-soundcloud
+            
+            # Pull latest changes
+            echo "📥 Pulling latest code from GitHub..."
+            git pull origin main || git pull origin master
+            
+            # Backend deployment
+            echo "🔧 Updating backend..."
+            
+            # Copy application files to Docker container
+            if [ -d "laravel/migrations" ]; then
+                docker cp laravel/migrations/. sc_app:/var/www/html/database/migrations/ 2>/dev/null || true
+            fi
+            
+            if [ -d "laravel/models" ]; then
+                docker cp laravel/models/. sc_app:/var/www/html/app/Models/ 2>/dev/null || true
+            fi
+            
+            if [ -d "laravel/controllers" ]; then
+                docker cp laravel/controllers/. sc_app:/var/www/html/app/Http/Controllers/Api/ 2>/dev/null || true
+            fi
+            
+            if [ -d "laravel/jobs" ]; then
+                docker cp laravel/jobs/. sc_app:/var/www/html/app/Jobs/ 2>/dev/null || true
+            fi
+            
+            if [ -f "laravel/routes/api.php" ]; then
+                docker cp laravel/routes/api.php sc_app:/var/www/html/routes/api.php 2>/dev/null || true
+            fi
+            
+            if [ -f "laravel/providers/AuthServiceProvider.php" ]; then
+                docker cp laravel/providers/AuthServiceProvider.php sc_app:/var/www/html/app/Providers/AuthServiceProvider.php 2>/dev/null || true
+            fi
+            
+            # Run migrations
+            echo "🗄️  Running database migrations..."
+            docker compose exec -T app php artisan migrate --force 2>/dev/null || true
+            
+            # Clear Laravel cache
+            echo "🧹 Clearing cache..."
+            docker compose exec -T app php artisan cache:clear 2>/dev/null || true
+            docker compose exec -T app php artisan config:clear 2>/dev/null || true
+            docker compose exec -T app php artisan route:clear 2>/dev/null || true
+            
+            # Frontend deployment
+            echo "🎨 Updating frontend..."
+            docker compose restart frontend
+            
+            # Restart queue workers to pick up new code
+            echo "🔄 Restarting queue workers..."
+            docker compose restart queue
+            
+            echo "✅ Deployment complete!"
+            echo "🌐 Frontend: http://185.250.36.33:5173"
+            echo "🔌 Backend: http://185.250.36.33/api"
+            
+      - name: Deployment Status
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi
+
