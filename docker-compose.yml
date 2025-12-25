@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: serversideup/php:8.3-fpm-nginx
+    image: serversideup/php:8.4-fpm-nginx
     container_name: sc_app
     environment:
       APP_ENV: production
@@ -82,7 +82,7 @@ services:
       - sc_network
 
   queue:
-    image: serversideup/php:8.3-fpm
+    image: serversideup/php:8.4-fpm
     container_name: sc_queue
     command: php artisan queue:work --sleep=3 --tries=3 --timeout=300
     working_dir: /var/www/html
