@@ -19,6 +19,7 @@ import Login from "./pages/Login"
 import Register from "./pages/Register"
 import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
+import Admin from "./pages/Admin"
 
 function Header() {
   const navigate = useNavigate()
@@ -339,6 +340,14 @@ function Header() {
                   <Link to="/notifications" className="dropdown-item">
                     <i className="fas fa-bell"></i> Notifications
                   </Link>
+                  {user.is_admin && (
+                    <>
+                      <div className="dropdown-divider"></div>
+                      <Link to="/admin" className="dropdown-item" style={{ color: 'var(--primary)', fontWeight: '600' }}>
+                        <i className="fas fa-shield-halved"></i> Admin Dashboard
+                      </Link>
+                    </>
+                  )}
                   <div className="dropdown-divider"></div>
                   <Link to="/settings" className="dropdown-item">
                     <i className="fas fa-cog"></i> Settings
@@ -533,6 +542,7 @@ function AppContent() {
           <Route path="/playlists/:id" element={<Playlists />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

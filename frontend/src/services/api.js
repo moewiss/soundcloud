@@ -303,6 +303,21 @@ export const api = {
   getAdminTracks: async () => {
     const res = await axiosInstance.get('/admin/tracks')
     return res.data
+  },
+  
+  getPendingTracks: async () => {
+    const res = await axiosInstance.get('/admin/tracks/pending')
+    return res.data
+  },
+  
+  approveTrack: async (trackId) => {
+    const res = await axiosInstance.patch(`/admin/tracks/${trackId}/approve`)
+    return res.data
+  },
+  
+  rejectTrack: async (trackId) => {
+    const res = await axiosInstance.patch(`/admin/tracks/${trackId}/reject`)
+    return res.data
   }
 }
 
