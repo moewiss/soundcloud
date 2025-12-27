@@ -76,7 +76,8 @@ export default function Login() {
           <div className="auth-form-container">
             <div className="auth-header">
               <h2>Welcome Back</h2>
-              <p>Sign in to continue your journey</p>
+              <p>Sign in to continue your journey 🚀</p>
+              <small style={{ color: '#666', fontSize: '0.85rem' }}>Auto-Deploy v1.0 - Live!</small>
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form">
