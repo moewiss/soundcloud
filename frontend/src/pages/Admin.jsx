@@ -173,7 +173,7 @@ export default function Admin() {
           onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
-            <div style={{ fontSize: '14px', opacity: 0.9', marginBottom: '8px' }}>📊 Total Tracks</div>
+            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>📊 Total Tracks</div>
             <div style={{ fontSize: '36px', fontWeight: '700' }}>{stats.pending + stats.approved + stats.rejected}</div>
           </div>
         </div>
