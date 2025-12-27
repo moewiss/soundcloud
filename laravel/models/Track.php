@@ -61,10 +61,13 @@ class Track extends Model
             return null;
         }
         
-        return \Storage::disk('s3')->temporaryUrl(
+        $url = \Storage::disk('s3')->temporaryUrl(
             $this->audio_path,
             now()->addHours(2)
         );
+        
+        // Replace internal MinIO URL with public URL
+        return str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
     }
 
     public function getCoverUrlAttribute(): ?string
@@ -73,10 +76,13 @@ class Track extends Model
             return null;
         }
         
-        return \Storage::disk('s3')->temporaryUrl(
+        $url = \Storage::disk('s3')->temporaryUrl(
             $this->cover_path,
             now()->addHours(2)
         );
+        
+        // Replace internal MinIO URL with public URL
+        return str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
     }
 
     public function incrementPlays(): void

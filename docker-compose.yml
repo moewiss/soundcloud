@@ -18,7 +18,8 @@ services:
       SESSION_DRIVER: redis
       REDIS_HOST: redis
       FILESYSTEM_DISK: s3
-      AWS_ENDPOINT: http://185.250.36.33:9000
+      AWS_ENDPOINT: http://minio:9000
+      AWS_URL: http://185.250.36.33:9000
       AWS_ACCESS_KEY_ID: sc_minio
       AWS_SECRET_ACCESS_KEY: sc_minio_secret
       AWS_DEFAULT_REGION: us-east-1
@@ -97,7 +98,8 @@ services:
       CACHE_STORE: redis
       REDIS_HOST: redis
       FILESYSTEM_DISK: s3
-      AWS_ENDPOINT: http://185.250.36.33:9000
+      AWS_ENDPOINT: http://minio:9000
+      AWS_URL: http://185.250.36.33:9000
       AWS_ACCESS_KEY_ID: sc_minio
       AWS_SECRET_ACCESS_KEY: sc_minio_secret
       AWS_DEFAULT_REGION: us-east-1
