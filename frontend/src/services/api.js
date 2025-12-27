@@ -49,8 +49,8 @@ axiosInstance.interceptors.response.use(
 
 export const api = {
   // Auth
-  login: async (email, password) => {
-    const res = await axiosInstance.post('/login', { email, password })
+  login: async (data) => {
+    const res = await axiosInstance.post('/login', data)
     return res.data
   },
   
@@ -61,6 +61,11 @@ export const api = {
   
   logout: async () => {
     const res = await axiosInstance.post('/logout')
+    return res.data
+  },
+  
+  guest: async () => {
+    const res = await axiosInstance.post('/guest-login')
     return res.data
   },
   
