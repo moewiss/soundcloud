@@ -100,7 +100,7 @@ export default function Upload() {
 
     try {
       const data = new FormData()
-      data.append('audio', audioFile)
+      data.append('file', audioFile)  // Changed from 'audio' to 'file' to match backend
       data.append('title', formData.title)
       data.append('category', formData.category)
       data.append('description', formData.description)
