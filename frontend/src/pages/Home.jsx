@@ -81,9 +81,26 @@ export default function Home() {
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
-          <h1 className="hero-title">
-            {user.name ? `Welcome back, ${user.name.split(' ')[0]}!` : 'Connect with the Words of Allah'}
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            <h1 className="hero-title" style={{ margin: 0 }}>
+              {user.name ? `Welcome back, ${user.name.split(' ')[0]}!` : 'Connect with the Words of Allah'}
+            </h1>
+            <span style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: '600',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+            }}>
+              <i className="fab fa-github"></i>
+              GitHub Auto-Deploy ✓
+            </span>
+          </div>
           <p className="hero-subtitle">
             Explore thousands of Quran recitations, nasheeds, lectures, and more. 
             Start your spiritual journey today.
