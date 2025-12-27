@@ -44,8 +44,7 @@ services:
       MYSQL_ROOT_PASSWORD: rootpass
     volumes:
       - dbdata:/var/lib/mysql
-    ports:
-      - "3306:3306"
+    # Port 3306 removed - database only accessible internally via Docker network
     networks:
       - sc_network
     command: --default-authentication-plugin=mysql_native_password
