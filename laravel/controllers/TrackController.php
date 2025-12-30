@@ -18,13 +18,26 @@ class TrackController extends Controller
             ->latest()
             ->paginate(20);
 
-        // Add is_liked for authenticated users
+        // Add is_liked and ensure audio_url is present
         if (auth()->check()) {
             $tracks->getCollection()->transform(function ($track) {
                 $track->is_liked = auth()->user()->hasLiked($track);
                 $track->likes_count = $track->likes_count ?? 0;
                 $track->comments_count = $track->comments_count ?? 0;
                 $track->plays_count = $track->plays ?? 0;
+                // Ensure audio_url is included
+                $track->audio_url = $track->audio_url;
+                $track->cover_url = $track->cover_url;
+                return $track;
+            });
+        } else {
+            // For guests, also add audio_url
+            $tracks->getCollection()->transform(function ($track) {
+                $track->likes_count = $track->likes_count ?? 0;
+                $track->comments_count = $track->comments_count ?? 0;
+                $track->plays_count = $track->plays ?? 0;
+                $track->audio_url = $track->audio_url;
+                $track->cover_url = $track->cover_url;
                 return $track;
             });
         }

@@ -73,17 +73,28 @@ class Track extends Model
         $path = $this->audio_path ?? $this->source_path;
         
         if (!$path) {
+            \Log::warning("Track {$this->id} has no audio_path or source_path");
             return null;
         }
         
         try {
+            // Check if file exists
+            if (!\Storage::disk('s3')->exists($path)) {
+                \Log::error("Audio file not found for track {$this->id}: {$path}");
+                return null;
+            }
+            
             $url = \Storage::disk('s3')->temporaryUrl(
                 $path,
                 now()->addHours(2)
             );
             
             // Replace internal MinIO URL with public URL
-            return str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
+            $publicUrl = str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
+            
+            \Log::info("Generated audio URL for track {$this->id}: {$publicUrl}");
+            
+            return $publicUrl;
         } catch (\Exception $e) {
             \Log::error("Error generating audio URL for track {$this->id}: " . $e->getMessage());
             return null;
