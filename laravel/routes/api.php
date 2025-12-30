@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\PlaylistController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\HistoryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -87,9 +88,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{id}/playlists', [PlaylistController::class, 'userPlaylists']);
     
     // History
-    Route::get('/history', [TrackController::class, 'history']);
-    Route::post('/history', [TrackController::class, 'addToHistory']);
-    Route::delete('/history', [TrackController::class, 'clearHistory']);
+    Route::get('/history', [HistoryController::class, 'index']);
+    Route::post('/history', [HistoryController::class, 'store']);
+    Route::delete('/history', [HistoryController::class, 'clear']);
     
     // Notifications
     Route::get('/notifications', [AuthController::class, 'notifications']);

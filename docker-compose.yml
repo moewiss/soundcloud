@@ -63,6 +63,7 @@ services:
     environment:
       MINIO_ROOT_USER: sc_minio
       MINIO_ROOT_PASSWORD: sc_minio_secret
+      MINIO_BROWSER_REDIRECT_URL: http://185.250.36.33:9001
     volumes:
       - miniodata:/data
     ports:
@@ -70,6 +71,11 @@ services:
       - "9001:9001"
     networks:
       - sc_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
   ffmpeg:
     image: jrottenberg/ffmpeg:6.1-ubuntu
