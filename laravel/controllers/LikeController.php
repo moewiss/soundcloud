@@ -47,19 +47,25 @@ class LikeController extends Controller
         }
 
         $user = auth()->user();
+        $isLiked = $user->hasLiked($track);
 
-        if ($user->hasLiked($track)) {
+        if ($isLiked) {
             $user->likedTracks()->detach($track->id);
             $message = 'Track unliked successfully';
+            $newState = false;
         } else {
             $user->likedTracks()->attach($track->id);
             $message = 'Track liked successfully';
+            $newState = true;
         }
+
+        // Refresh the count
+        $track->loadCount('likes');
 
         return response()->json([
             'message' => $message,
-            'likes_count' => $track->likes()->count(),
-            'is_liked' => $user->hasLiked($track),
+            'likes_count' => $track->likes_count ?? 0,
+            'is_liked' => $newState,
         ]);
     }
 

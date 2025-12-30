@@ -77,7 +77,7 @@ class TrackController extends Controller
             'source_path' => $sourcePath,
             'cover_path' => $coverPath,
             'tags' => $validated['tags'] ?? null,
-            'status' => 'pending',
+            'status' => 'approved', // Auto-approve tracks
         ]);
 
         // Dispatch transcoding job
@@ -93,8 +93,18 @@ class TrackController extends Controller
     {
         $tracks = $request->user()
             ->tracks()
+            ->withCount(['likes', 'comments'])
             ->latest()
             ->paginate(20);
+
+        // Add is_liked for authenticated users
+        $tracks->getCollection()->transform(function ($track) use ($request) {
+            $track->is_liked = $request->user()->hasLiked($track);
+            $track->likes_count = $track->likes_count ?? 0;
+            $track->comments_count = $track->comments_count ?? 0;
+            $track->plays_count = $track->plays ?? 0;
+            return $track;
+        });
 
         return response()->json($tracks);
     }
