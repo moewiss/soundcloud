@@ -52,5 +52,32 @@ class User extends Authenticatable
     {
         return $this->likedTracks()->where('track_id', $track->id)->exists();
     }
+
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'following_id', 'follower_id')
+            ->withTimestamps();
+    }
+
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'following_id')
+            ->withTimestamps();
+    }
+
+    public function isFollowing(User $user): bool
+    {
+        return $this->following()->where('following_id', $user->id)->exists();
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function playlists(): HasMany
+    {
+        return $this->hasMany(Playlist::class);
+    }
 }
 

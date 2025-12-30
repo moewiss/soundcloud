@@ -14,8 +14,20 @@ class TrackController extends Controller
     {
         $tracks = Track::approved()
             ->with(['user.profile'])
+            ->withCount(['likes', 'comments'])
             ->latest()
             ->paginate(20);
+
+        // Add is_liked for authenticated users
+        if (auth()->check()) {
+            $tracks->getCollection()->transform(function ($track) {
+                $track->is_liked = auth()->user()->hasLiked($track);
+                $track->likes_count = $track->likes_count ?? 0;
+                $track->comments_count = $track->comments_count ?? 0;
+                $track->plays_count = $track->plays ?? 0;
+                return $track;
+            });
+        }
 
         return response()->json($tracks);
     }
@@ -29,10 +41,13 @@ class TrackController extends Controller
         $track->load(['user.profile']);
         $track->incrementPlays();
 
-        return response()->json([
-            'track' => $track,
-            'is_liked' => auth()->check() ? auth()->user()->hasLiked($track) : false,
-        ]);
+        $trackData = $track->toArray();
+        $trackData['is_liked'] = auth()->check() ? auth()->user()->hasLiked($track) : false;
+        $trackData['likes_count'] = $track->likes()->count();
+        $trackData['comments_count'] = $track->comments()->count();
+        $trackData['plays_count'] = $track->plays;
+
+        return response()->json($trackData);
     }
 
     public function store(Request $request)

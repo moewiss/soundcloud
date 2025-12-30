@@ -45,6 +45,18 @@ class Track extends Model
             ->withTimestamps();
     }
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function playlists(): BelongsToMany
+    {
+        return $this->belongsToMany(Playlist::class, 'playlist_track')
+            ->withPivot('position')
+            ->withTimestamps();
+    }
+
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');

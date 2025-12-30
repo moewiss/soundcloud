@@ -40,6 +40,29 @@ class LikeController extends Controller
         ]);
     }
 
+    public function toggle(Track $track)
+    {
+        if ($track->status !== 'approved') {
+            abort(404);
+        }
+
+        $user = auth()->user();
+
+        if ($user->hasLiked($track)) {
+            $user->likedTracks()->detach($track->id);
+            $message = 'Track unliked successfully';
+        } else {
+            $user->likedTracks()->attach($track->id);
+            $message = 'Track liked successfully';
+        }
+
+        return response()->json([
+            'message' => $message,
+            'likes_count' => $track->likes()->count(),
+            'is_liked' => $user->hasLiked($track),
+        ]);
+    }
+
     public function index(Request $request)
     {
         $likedTracks = $request->user()

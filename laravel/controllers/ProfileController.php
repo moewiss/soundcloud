@@ -47,10 +47,35 @@ class ProfileController extends Controller
     {
         $user = \App\Models\User::with('profile')->findOrFail($userId);
         
-        return response()->json([
-            'user' => $user,
+        $data = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'bio' => $user->profile->bio ?? null,
+            'avatar_url' => $user->profile->avatar_url ?? null,
+            'created_at' => $user->created_at,
             'tracks_count' => $user->tracks()->approved()->count(),
-        ]);
+            'followers_count' => $user->followers()->count(),
+            'following_count' => $user->following()->count(),
+        ];
+
+        // Check if current user is following this user
+        if (auth()->check()) {
+            $data['is_following'] = auth()->user()->isFollowing($user);
+        }
+        
+        return response()->json($data);
+    }
+
+    public function index()
+    {
+        $users = \App\Models\User::with('profile')
+            ->withCount(['tracks' => function ($query) {
+                $query->approved();
+            }])
+            ->get();
+        
+        return response()->json($users);
     }
 }
 
