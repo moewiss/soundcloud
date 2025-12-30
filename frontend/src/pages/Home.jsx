@@ -85,7 +85,7 @@ export default function Home() {
             {user.name ? `Welcome back, ${user.name.split(' ')[0]}!` : 'Connect with the Words of Allah'}
           </h1>
           <p className="hero-subtitle">
-            Explore thousands of Quran recitations, nasheeds, lectures, and more. 
+            Explore 100 thousands of Quran recitations, nasheeds, lectures, and more. 
             Start your spiritual journey today.
           </p>
           <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
