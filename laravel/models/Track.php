@@ -69,17 +69,25 @@ class Track extends Model
 
     public function getAudioUrlAttribute(): ?string
     {
-        if (!$this->audio_path) {
+        // Use audio_path if available, fallback to source_path
+        $path = $this->audio_path ?? $this->source_path;
+        
+        if (!$path) {
             return null;
         }
         
-        $url = \Storage::disk('s3')->temporaryUrl(
-            $this->audio_path,
-            now()->addHours(2)
-        );
-        
-        // Replace internal MinIO URL with public URL
-        return str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
+        try {
+            $url = \Storage::disk('s3')->temporaryUrl(
+                $path,
+                now()->addHours(2)
+            );
+            
+            // Replace internal MinIO URL with public URL
+            return str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
+        } catch (\Exception $e) {
+            \Log::error("Error generating audio URL for track {$this->id}: " . $e->getMessage());
+            return null;
+        }
     }
 
     public function getCoverUrlAttribute(): ?string

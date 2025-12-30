@@ -18,15 +18,26 @@ export function PlayerProvider({ children }) {
     const handleTimeUpdate = () => setProgress(audio.currentTime)
     const handleLoadedMetadata = () => setDuration(audio.duration)
     const handleEnded = () => playNext()
+    const handleError = (e) => {
+      console.error('Audio error:', e)
+      setIsPlaying(false)
+    }
+    const handleCanPlay = () => {
+      console.log('Audio can play')
+    }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
     audio.addEventListener('ended', handleEnded)
+    audio.addEventListener('error', handleError)
+    audio.addEventListener('canplay', handleCanPlay)
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
       audio.removeEventListener('ended', handleEnded)
+      audio.removeEventListener('error', handleError)
+      audio.removeEventListener('canplay', handleCanPlay)
     }
   }, [])
 
@@ -40,11 +51,24 @@ export function PlayerProvider({ children }) {
       return
     }
 
+    if (!track.audio_url) {
+      console.error('No audio URL for track:', track)
+      return
+    }
+
     const audio = audioRef.current
     audio.src = track.audio_url
+    console.log('Playing track:', track.title, 'URL:', track.audio_url)
+    
     audio.play()
-    setCurrentTrack(track)
-    setIsPlaying(true)
+      .then(() => {
+        setCurrentTrack(track)
+        setIsPlaying(true)
+      })
+      .catch(error => {
+        console.error('Play error:', error)
+        setIsPlaying(false)
+      })
     
     if (trackQueue.length > 0) {
       setQueue(trackQueue)
