@@ -86,7 +86,7 @@ export default function Home() {
           </h1>
           <p className="hero-subtitle">
             Explore thousands of Quran recitations, nasheeds, lectures, and more. 
-            Start your spiritual journey today.
+            Start your spiritual journey today! 🎵 [TEST: Deployment Working ✅]
           </p>
           <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
             <button 
