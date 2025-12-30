@@ -58,10 +58,20 @@ export default function Home() {
   const handleLike = async (trackId, e) => {
     e.stopPropagation()
     try {
-      await api.toggleLike(trackId)
-      fetchTracks()
+      const result = await api.toggleLike(trackId)
+      // Update track locally with API response
+      setTracks(prev => prev.map(t => 
+        t.id === trackId 
+          ? { 
+              ...t, 
+              is_liked: result.is_liked,
+              likes_count: result.likes_count
+            }
+          : t
+      ))
+      toast.success(result.is_liked ? 'Added to likes' : 'Removed from likes')
     } catch (error) {
-      toast.error('Failed to update')
+      toast.error('Please login to like tracks')
     }
   }
 

@@ -121,13 +121,22 @@ export default function Library() {
   const handleLike = async (trackId, e) => {
     e?.stopPropagation()
     try {
-      await api.toggleLike(trackId)
-      // Refresh liked tracks
-      const liked = await api.getLikedTracks().catch(() => [])
-      setLikedTracks(Array.isArray(liked) ? liked : [])
-      toast.success('Updated!')
+      const result = await api.toggleLike(trackId)
+      // If unliked, remove from the list; otherwise update the count
+      if (!result.is_liked) {
+        setLikedTracks(prev => prev.filter(t => t.id !== trackId))
+        toast.success('Removed from likes')
+      } else {
+        // Update the track's like count
+        setLikedTracks(prev => prev.map(t => 
+          t.id === trackId 
+            ? { ...t, likes_count: result.likes_count, is_liked: true }
+            : t
+        ))
+        toast.success('Added to likes')
+      }
     } catch (error) {
-      toast.error('Failed to update')
+      toast.error('Please login to like tracks')
     }
   }
 

@@ -62,14 +62,14 @@ export default function TrackDetail() {
 
   const handleLike = async () => {
     try {
-      await api.toggleLike(id)
-      // Update track locally for instant feedback
+      const result = await api.toggleLike(id)
+      // Update track locally with API response
       setTrack(prev => prev ? {
         ...prev,
-        is_liked: !prev.is_liked,
-        likes_count: prev.is_liked ? Math.max(0, (prev.likes_count || 1) - 1) : (prev.likes_count || 0) + 1
+        is_liked: result.is_liked,
+        likes_count: result.likes_count
       } : prev)
-      toast.success(track.is_liked ? 'Removed from likes' : 'Added to likes')
+      toast.success(result.is_liked ? 'Added to likes' : 'Removed from likes')
     } catch (error) {
       console.error('Like error:', error)
       if (error.response?.status === 401) {

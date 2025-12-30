@@ -12,11 +12,16 @@ class TrackController extends Controller
 {
     public function index(Request $request)
     {
-        $tracks = Track::approved()
+        $query = Track::approved()
             ->with(['user.profile'])
-            ->withCount(['likes', 'comments'])
-            ->latest()
-            ->paginate(20);
+            ->withCount(['likes', 'comments']);
+
+        // Filter by user_id if provided
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        $tracks = $query->latest()->paginate(20);
 
         // Add is_liked and ensure audio_url is present
         if (auth()->check()) {
@@ -31,8 +36,9 @@ class TrackController extends Controller
                 return $track;
             });
         } else {
-            // For guests, also add audio_url
+            // For guests, also add audio_url and is_liked = false
             $tracks->getCollection()->transform(function ($track) {
+                $track->is_liked = false;
                 $track->likes_count = $track->likes_count ?? 0;
                 $track->comments_count = $track->comments_count ?? 0;
                 $track->plays_count = $track->plays ?? 0;

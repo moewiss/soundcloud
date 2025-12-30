@@ -74,8 +74,20 @@ class LikeController extends Controller
         $likedTracks = $request->user()
             ->likedTracks()
             ->with(['user.profile'])
+            ->withCount(['likes', 'comments'])
             ->latest('likes.created_at')
             ->paginate(20);
+
+        // Add is_liked (always true for liked tracks) and other data
+        $likedTracks->getCollection()->transform(function ($track) {
+            $track->is_liked = true;
+            $track->likes_count = $track->likes_count ?? 0;
+            $track->comments_count = $track->comments_count ?? 0;
+            $track->plays_count = $track->plays ?? 0;
+            $track->audio_url = $track->audio_url;
+            $track->cover_url = $track->cover_url;
+            return $track;
+        });
 
         return response()->json($likedTracks);
     }

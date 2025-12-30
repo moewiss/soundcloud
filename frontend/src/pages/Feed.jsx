@@ -38,18 +38,18 @@ export default function Feed() {
   const handleLike = async (trackId, e) => {
     e.stopPropagation()
     try {
-      await api.toggleLike(trackId)
-      // Update track locally for instant feedback
+      const result = await api.toggleLike(trackId)
+      // Update track locally with API response
       setTracks(prev => prev.map(t => 
         t.id === trackId 
           ? { 
               ...t, 
-              is_liked: !t.is_liked,
-              likes_count: t.is_liked ? Math.max(0, (t.likes_count || 1) - 1) : (t.likes_count || 0) + 1
+              is_liked: result.is_liked,
+              likes_count: result.likes_count
             }
           : t
       ))
-      toast.success(tracks.find(t => t.id === trackId)?.is_liked ? 'Removed from likes' : 'Added to likes')
+      toast.success(result.is_liked ? 'Added to likes' : 'Removed from likes')
     } catch (error) {
       toast.error('Please login to like tracks')
     }
