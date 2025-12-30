@@ -84,13 +84,9 @@ class Track extends Model
                 return null;
             }
             
-            $url = \Storage::disk('s3')->temporaryUrl(
-                $path,
-                now()->addHours(2)
-            );
-            
-            // Replace internal MinIO URL with public URL
-            $publicUrl = str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
+            // Use nginx proxy instead of direct MinIO URL to add CORS headers
+            $baseUrl = rtrim(env('APP_URL', 'http://localhost'), '/');
+            $publicUrl = $baseUrl . '/storage/' . $path;
             
             \Log::info("Generated audio URL for track {$this->id}: {$publicUrl}");
             
@@ -107,13 +103,14 @@ class Track extends Model
             return null;
         }
         
-        $url = \Storage::disk('s3')->temporaryUrl(
-            $this->cover_path,
-            now()->addHours(2)
-        );
-        
-        // Replace internal MinIO URL with public URL
-        return str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
+        try {
+            // Use nginx proxy for CORS support
+            $baseUrl = rtrim(env('APP_URL', 'http://localhost'), '/');
+            return $baseUrl . '/storage/' . $this->cover_path;
+        } catch (\Exception $e) {
+            \Log::error("Error generating cover URL for track {$this->id}: " . $e->getMessage());
+            return null;
+        }
     }
 
     public function getDurationAttribute(): int
