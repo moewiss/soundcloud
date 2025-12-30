@@ -32,7 +32,7 @@ class Track extends Model
         'duration_seconds' => 'integer',
     ];
 
-    protected $appends = ['audio_url', 'cover_url'];
+    protected $appends = ['audio_url', 'cover_url', 'duration'];
 
     public function user(): BelongsTo
     {
@@ -95,6 +95,11 @@ class Track extends Model
         
         // Replace internal MinIO URL with public URL
         return str_replace('http://minio:9000', env('AWS_URL', 'http://minio:9000'), $url);
+    }
+
+    public function getDurationAttribute(): int
+    {
+        return $this->duration_seconds ?? 0;
     }
 
     public function incrementPlays(): void

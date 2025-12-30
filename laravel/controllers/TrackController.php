@@ -39,15 +39,30 @@ class TrackController extends Controller
         }
 
         $track->load(['user.profile']);
+        $track->loadCount(['likes', 'comments']);
         $track->incrementPlays();
 
-        $trackData = $track->toArray();
-        $trackData['is_liked'] = auth()->check() ? auth()->user()->hasLiked($track) : false;
-        $trackData['likes_count'] = $track->likes()->count();
-        $trackData['comments_count'] = $track->comments()->count();
-        $trackData['plays_count'] = $track->plays;
+        // Build response with all necessary data
+        $response = [
+            'id' => $track->id,
+            'title' => $track->title,
+            'description' => $track->description,
+            'audio_url' => $track->audio_url,
+            'cover_url' => $track->cover_url,
+            'duration' => $track->duration,
+            'duration_seconds' => $track->duration_seconds,
+            'plays_count' => $track->plays,
+            'likes_count' => $track->likes_count ?? 0,
+            'comments_count' => $track->comments_count ?? 0,
+            'is_liked' => auth()->check() ? auth()->user()->hasLiked($track) : false,
+            'created_at' => $track->created_at,
+            'updated_at' => $track->updated_at,
+            'user' => $track->user,
+            'tags' => $track->tags,
+            'category' => $track->category ?? null,
+        ];
 
-        return response()->json($trackData);
+        return response()->json($response);
     }
 
     public function store(Request $request)
@@ -80,12 +95,37 @@ class TrackController extends Controller
             'status' => 'approved', // Auto-approve tracks
         ]);
 
-        // Dispatch transcoding job
-        TranscodeTrack::dispatch($track->id);
+        // Try to get duration from uploaded file
+        try {
+            $tempFile = $request->file('file')->getRealPath();
+            if (function_exists('shell_exec') && file_exists($tempFile)) {
+                $durationCmd = sprintf(
+                    'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s 2>&1',
+                    escapeshellarg($tempFile)
+                );
+                $duration = trim(shell_exec($durationCmd) ?? '');
+                if ($duration && is_numeric($duration)) {
+                    $track->update(['duration_seconds' => (int) round((float) $duration)]);
+                }
+            }
+        } catch (\Exception $e) {
+            // If duration extraction fails, continue without it
+            \Log::warning("Could not extract duration for track {$track->id}: " . $e->getMessage());
+        }
+
+        // Set audio_path to source_path so it's playable immediately
+        $track->update(['audio_path' => $sourcePath]);
+
+        // Dispatch transcoding job (optional - for optimization)
+        try {
+            TranscodeTrack::dispatch($track->id);
+        } catch (\Exception $e) {
+            \Log::warning("Could not dispatch transcode job: " . $e->getMessage());
+        }
 
         return response()->json([
-            'message' => 'Track uploaded successfully and is being processed',
-            'track' => $track,
+            'message' => 'Track uploaded successfully',
+            'track' => $track->fresh(),
         ], 201);
     }
 
