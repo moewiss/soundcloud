@@ -28,10 +28,9 @@ class Profile extends Model
             return null;
         }
         
-        return \Storage::disk('s3')->temporaryUrl(
-            $this->avatar_path,
-            now()->addHours(1)
-        );
+        // Use Nginx proxy URL instead of direct MinIO URL
+        // This ensures avatars work from the browser
+        return config('app.url') . '/storage/' . $this->avatar_path;
     }
 }
 
