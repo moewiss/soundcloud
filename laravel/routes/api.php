@@ -34,6 +34,9 @@ Route::get('/tracks/{track}/comments', [CommentController::class, 'index']);
 Route::get('/users/{id}/followers', [FollowController::class, 'followers']);
 Route::get('/users/{id}/following', [FollowController::class, 'following']);
 
+// User's liked tracks (public read)
+Route::get('/users/{id}/likes', [LikeController::class, 'userLikes']);
+
 // Search
 Route::get('/search', [SearchController::class, 'search']);
 

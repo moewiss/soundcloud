@@ -78,9 +78,49 @@ class LikeController extends Controller
             ->latest('likes.created_at')
             ->paginate(20);
 
+        // Get all liked track IDs for current user (for is_liked status)
+        $likedTrackIds = $request->user()
+            ->likedTracks()
+            ->pluck('track_id')
+            ->toArray();
+
         // Add is_liked (always true for liked tracks) and other data
-        $likedTracks->getCollection()->transform(function ($track) {
-            $track->is_liked = true;
+        $likedTracks->getCollection()->transform(function ($track) use ($likedTrackIds) {
+            $track->is_liked = in_array($track->id, $likedTrackIds);
+            $track->likes_count = $track->likes_count ?? 0;
+            $track->comments_count = $track->comments_count ?? 0;
+            $track->plays_count = $track->plays ?? 0;
+            $track->audio_url = $track->audio_url;
+            $track->cover_url = $track->cover_url;
+            return $track;
+        });
+
+        return response()->json($likedTracks);
+    }
+
+    public function userLikes($userId)
+    {
+        $user = \App\Models\User::findOrFail($userId);
+        
+        $likedTracks = $user->likedTracks()
+            ->where('status', 'approved')
+            ->with(['user.profile'])
+            ->withCount(['likes', 'comments'])
+            ->latest('likes.created_at')
+            ->paginate(20);
+
+        // Get all liked track IDs for current user (if authenticated)
+        $likedTrackIds = [];
+        if (auth()->check()) {
+            $likedTrackIds = auth()->user()
+                ->likedTracks()
+                ->pluck('track_id')
+                ->toArray();
+        }
+
+        // Add is_liked status relative to current user (not the profile user)
+        $likedTracks->getCollection()->transform(function ($track) use ($likedTrackIds) {
+            $track->is_liked = in_array($track->id, $likedTrackIds);
             $track->likes_count = $track->likes_count ?? 0;
             $track->comments_count = $track->comments_count ?? 0;
             $track->plays_count = $track->plays ?? 0;

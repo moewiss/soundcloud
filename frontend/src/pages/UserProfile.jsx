@@ -11,6 +11,7 @@ export default function UserProfile() {
   const [tracks, setTracks] = useState([])
   const [playlists, setPlaylists] = useState([])
   const [reposts, setReposts] = useState([])
+  const [likedTracks, setLikedTracks] = useState([])
   const [activeTab, setActiveTab] = useState('all')
   const [loading, setLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
@@ -23,6 +24,7 @@ export default function UserProfile() {
   const tabs = [
     { id: 'all', label: 'All', icon: 'fa-th-large' },
     { id: 'tracks', label: 'Tracks', icon: 'fa-music' },
+    { id: 'likes', label: 'Likes', icon: 'fa-heart' },
     { id: 'playlists', label: 'Playlists', icon: 'fa-list' },
     { id: 'reposts', label: 'Reposts', icon: 'fa-retweet' },
     { id: 'albums', label: 'Albums', icon: 'fa-compact-disc' }
@@ -36,6 +38,7 @@ export default function UserProfile() {
       fetchUser()
       fetchTracks()
       fetchPlaylists()
+      fetchLikedTracks()
     }
   }, [id])
 
@@ -130,6 +133,16 @@ export default function UserProfile() {
     }
   }
 
+  const fetchLikedTracks = async () => {
+    try {
+      const data = await api.getUserLikes(id)
+      setLikedTracks(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching liked tracks:', error)
+      setLikedTracks([])
+    }
+  }
+
   const fetchPlaylists = async () => {
     try {
       // Try user-specific endpoint first
@@ -211,6 +224,20 @@ export default function UserProfile() {
             }
           : t
       ))
+      // Also update liked tracks list
+      setLikedTracks(prev => prev.map(t => 
+        t.id === trackId 
+          ? { 
+              ...t, 
+              is_liked: result.is_liked,
+              likes_count: result.likes_count
+            }
+          : t
+      ))
+      // If unliked, remove from liked tracks list
+      if (!result.is_liked) {
+        setLikedTracks(prev => prev.filter(t => t.id !== trackId))
+      }
       toast.success(result.is_liked ? 'Added to likes' : 'Removed from likes')
     } catch (error) {
       toast.error('Please login to like tracks')
@@ -401,6 +428,19 @@ export default function UserProfile() {
         ) : (
           <div className="feed-list">
             {tracks.map(renderTrackCard)}
+          </div>
+        )
+
+      case 'likes':
+        return likedTracks.length === 0 ? (
+          <div className="empty-state">
+            <i className="fas fa-heart"></i>
+            <h3>No liked tracks yet</h3>
+            <p>{isOwnProfile ? 'Like tracks to see them here!' : `${user.name} hasn't liked any tracks yet`}</p>
+          </div>
+        ) : (
+          <div className="feed-list">
+            {likedTracks.map(renderTrackCard)}
           </div>
         )
 
@@ -624,13 +664,20 @@ export default function UserProfile() {
             </div>
 
             {/* Likes */}
-            <div style={{
+            <div 
+              onClick={() => setActiveTab('likes')}
+              style={{
               background: 'var(--bg-white)',
               borderRadius: 'var(--radius-lg)',
               padding: '20px',
               marginBottom: '20px',
-              border: '1px solid var(--border-light)'
-            }}>
+              border: '1px solid var(--border-light)',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-light)'}
+            >
               <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: 'var(--text-primary)' }}>
                 <i className="fas fa-heart" style={{ color: 'var(--primary)', marginRight: '8px' }}></i>
                 {user.likes_count || 0} Likes

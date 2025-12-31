@@ -151,7 +151,20 @@ export const api = {
   
   getLikedTracks: async () => {
     const res = await axiosInstance.get('/user/likes')
-    return res.data
+    // Handle paginated response
+    if (res.data.data) {
+      return res.data.data
+    }
+    return Array.isArray(res.data) ? res.data : []
+  },
+
+  getUserLikes: async (userId) => {
+    const res = await axiosInstance.get(`/users/${userId}/likes`)
+    // Handle paginated response
+    if (res.data.data) {
+      return res.data.data
+    }
+    return Array.isArray(res.data) ? res.data : []
   },
 
   // Comments
