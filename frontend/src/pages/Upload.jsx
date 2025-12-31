@@ -278,24 +278,25 @@ export default function Upload() {
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border-light)'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <i className="fas fa-music" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
-                        {audioFile?.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                        {formatDuration(audioDuration)} · {(audioFile?.size / (1024 * 1024)).toFixed(1)} MB
-                      </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <i className="fas fa-music" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
+                      {audioFiles.length === 1 ? audioFiles[0]?.name : `${audioFiles.length} files selected`}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => { setAudioFile(null); setStep(1); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {formatDuration(audioDuration)} · {audioFiles[0] ? (audioFiles[0].size / (1024 * 1024)).toFixed(1) : '0'} MB
+                      {audioFiles.length > 1 && ` (+ ${audioFiles.length - 1} more)`}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => { setAudioFiles([]); setStep(1); setFormData({ title: '', category: '', description: '', tags: '', privacy: 'public' }); }}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
                 </div>
               </div>
 
