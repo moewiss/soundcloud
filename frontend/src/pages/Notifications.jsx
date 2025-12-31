@@ -24,36 +24,11 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     try {
       const data = await api.getNotifications()
-      setNotifications(Array.isArray(data) ? data : [])
+      setNotifications(data.notifications || [])
     } catch (error) {
       console.error('Error:', error)
-      // Mock data for demonstration
-      setNotifications([
-        {
-          id: 1,
-          type: 'like',
-          user: { id: 2, name: 'Sarah Johnson' },
-          track: { id: 1, title: 'Beautiful Track' },
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          read: false
-        },
-        {
-          id: 2,
-          type: 'follow',
-          user: { id: 3, name: 'Michael Smith' },
-          created_at: new Date(Date.now() - 7200000).toISOString(),
-          read: false
-        },
-        {
-          id: 3,
-          type: 'comment',
-          user: { id: 4, name: 'David Brown' },
-          track: { id: 1, title: 'Beautiful Track' },
-          comment: 'This is amazing!',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          read: true
-        }
-      ])
+      toast.error('Failed to load notifications')
+      setNotifications([])
     } finally {
       setLoading(false)
     }

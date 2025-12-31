@@ -38,8 +38,34 @@ class ProfileController extends Controller
 
         $profile->save();
 
+        // Return full user data with updated profile
+        $user = $request->user()->load('profile');
+        
         return response()->json([
             'profile' => $profile,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'bio' => $profile->bio,
+                'avatar_url' => $profile->avatar_url,
+            ],
+        ]);
+    }
+
+    public function deleteAvatar(Request $request)
+    {
+        $profile = $request->user()->profile;
+
+        if ($profile->avatar_path) {
+            Storage::disk('s3')->delete($profile->avatar_path);
+            $profile->avatar_path = null;
+            $profile->save();
+        }
+
+        return response()->json([
+            'message' => 'Avatar deleted successfully',
+            'avatar_url' => null,
         ]);
     }
 

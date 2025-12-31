@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profile
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/user', [ProfileController::class, 'update']);
+    Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar']);
     
     // Tracks
     Route::post('/tracks', [TrackController::class, 'store']);
