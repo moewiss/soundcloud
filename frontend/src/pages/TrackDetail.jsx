@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
 import { copyToClipboard } from '../utils/clipboard'
+import AddToPlaylistModal from '../components/AddToPlaylistModal'
 
 export default function TrackDetail() {
   const { id } = useParams()
@@ -17,6 +18,7 @@ export default function TrackDetail() {
   const [editCommentText, setEditCommentText] = useState('')
   const [loading, setLoading] = useState(true)
   const [relatedTracks, setRelatedTracks] = useState([])
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
   const { playTrack, currentTrack, isPlaying, togglePlay, progress, duration } = usePlayer()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -371,7 +373,14 @@ export default function TrackDetail() {
             >
               <i className="fas fa-retweet"></i> {track.reposts_count || 0}
             </button>
-            <button 
+            <button
+              className="feed-action-btn"
+              onClick={() => setShowPlaylistModal(true)}
+            >
+              <i className="fas fa-plus"></i> Add to Playlist
+            </button>
+
+            <button
               className="feed-action-btn"
               onClick={handleShare}
             >
@@ -806,6 +815,13 @@ export default function TrackDetail() {
           </div>
         </div>
       </div>
+
+      {showPlaylistModal && (
+        <AddToPlaylistModal
+          trackId={id}
+          onClose={() => setShowPlaylistModal(false)}
+        />
+      )}
     </div>
   )
 }
