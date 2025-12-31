@@ -282,23 +282,23 @@ export default function Library() {
               ) : (
                 <div className="track-grid">
                   {likedTracks.map(item => (
-                    <div key={item.id} className="track-card" onClick={() => navigate(`/tracks/${item.track?.id}`)}>
+                    <div key={item.id} className="track-card" onClick={() => navigate(`/tracks/${item.id}`)}>
                       <div className="track-artwork">
-                        {item.track?.cover_url ? (
-                          <img src={item.track.cover_url} alt="" />
+                        {item.cover_url ? (
+                          <img src={item.cover_url} alt="" />
                         ) : (
                           <i className="fas fa-music"></i>
                         )}
-                        <button className="track-play-btn" onClick={(e) => { e.stopPropagation(); handlePlay(item.track); }}>
+                        <button className="track-play-btn" onClick={(e) => { e.stopPropagation(); handlePlay(item); }}>
                           <i className="fas fa-play"></i>
                         </button>
                       </div>
                       <div className="track-info">
                         <div className="track-title">
                           <i className="fas fa-heart" style={{ color: 'var(--primary)', marginRight: '6px', fontSize: '11px' }}></i>
-                          {item.track?.title}
+                          {item.title}
                         </div>
-                        <div className="track-artist">{item.track?.user?.name}</div>
+                        <div className="track-artist">{item.user?.name}</div>
                       </div>
                     </div>
                   ))}

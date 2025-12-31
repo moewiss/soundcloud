@@ -69,6 +69,16 @@ export default function Home() {
             }
           : t
       ))
+      // Also update trending tracks
+      setTrendingTracks(prev => prev.map(t => 
+        t.id === trackId 
+          ? { 
+              ...t, 
+              is_liked: result.is_liked,
+              likes_count: result.likes_count
+            }
+          : t
+      ))
       toast.success(result.is_liked ? 'Added to likes' : 'Removed from likes')
     } catch (error) {
       toast.error('Please login to like tracks')
