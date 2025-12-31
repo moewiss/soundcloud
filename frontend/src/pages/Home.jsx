@@ -85,6 +85,37 @@ export default function Home() {
     }
   }
 
+  const handleRepost = async (trackId, e) => {
+    e.stopPropagation()
+    try {
+      const result = await api.toggleRepost(trackId)
+      setTracks(prev => prev.map(t => 
+        t.id === trackId 
+          ? { ...t, is_reposted: result.is_reposted, reposts_count: result.reposts_count }
+          : t
+      ))
+      setTrendingTracks(prev => prev.map(t => 
+        t.id === trackId 
+          ? { ...t, is_reposted: result.is_reposted, reposts_count: result.reposts_count }
+          : t
+      ))
+      toast.success(result.is_reposted ? 'Reposted!' : 'Unreposted')
+    } catch (error) {
+      toast.error('Please login to repost')
+    }
+  }
+
+  const handleShare = async (trackId, e) => {
+    e.stopPropagation()
+    const trackUrl = `${window.location.origin}/tracks/${trackId}`
+    try {
+      await navigator.clipboard.writeText(trackUrl)
+      toast.success('Link copied to clipboard!')
+    } catch (error) {
+      toast.error('Failed to copy link')
+    }
+  }
+
   if (loading) {
     return (
       <div className="page">
@@ -362,10 +393,17 @@ export default function Home() {
                         <i className="fas fa-heart"></i>
                         <span>{track.likes_count || 0}</span>
                       </button>
-                      <button className="feed-action-btn">
+                      <button 
+                        className={`feed-action-btn ${track.is_reposted ? 'active' : ''}`}
+                        onClick={(e) => handleRepost(track.id, e)}
+                      >
                         <i className="fas fa-retweet"></i>
+                        <span>{track.reposts_count || 0}</span>
                       </button>
-                      <button className="feed-action-btn">
+                      <button 
+                        className="feed-action-btn"
+                        onClick={(e) => handleShare(track.id, e)}
+                      >
                         <i className="fas fa-share"></i>
                       </button>
                       <div className="feed-stats">
