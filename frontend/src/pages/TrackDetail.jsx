@@ -333,25 +333,24 @@ export default function TrackDetail() {
             >
               <i className="fas fa-heart"></i> {track.likes_count || 0}
             </button>
-            <button className="feed-action-btn">
-              <i className="fas fa-retweet"></i> Repost
+            <button 
+              className={`feed-action-btn ${track.is_reposted ? 'active' : ''}`}
+              onClick={handleRepost}
+              style={{ minWidth: '90px' }}
+            >
+              <i className="fas fa-retweet"></i> {track.reposts_count || 0}
             </button>
-            <button className="feed-action-btn">
+            <button 
+              className="feed-action-btn"
+              onClick={handleShare}
+            >
               <i className="fas fa-share"></i> Share
-            </button>
-            <button className="feed-action-btn">
-              <i className="fas fa-link"></i> Copy Link
-            </button>
-            <button className="feed-action-btn">
-              <i className="fas fa-plus"></i> Add to playlist
-            </button>
-            <button className="feed-action-btn">
-              <i className="fas fa-ellipsis-h"></i>
             </button>
 
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '20px', color: 'var(--text-muted)', fontSize: '13px', alignItems: 'center' }}>
               <span><i className="fas fa-play"></i> {track.plays_count || 0}</span>
               <span><i className="fas fa-heart"></i> {track.likes_count || 0}</span>
+              <span><i className="fas fa-retweet"></i> {track.reposts_count || 0}</span>
               <span><i className="fas fa-comment"></i> {comments.length}</span>
             </div>
           </div>
@@ -421,16 +420,73 @@ export default function TrackDetail() {
                     }}>
                       {comment.user?.name?.charAt(0) || 'U'}
                     </div>
-                    <div>
-                      <div style={{ marginBottom: '5px' }}>
-                        <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
-                          {comment.user?.name}
-                        </Link>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                          {new Date(comment.created_at).toLocaleDateString()}
-                        </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
+                            {comment.user?.name}
+                          </Link>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                            {new Date(comment.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {comment.user?.id === user.id && (
+                          <button
+                            onClick={() => handleEditComment(comment)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--primary)',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
+                            onMouseLeave={(e) => e.target.style.background = 'none'}
+                          >
+                            <i className="fas fa-edit"></i> Edit
+                          </button>
+                        )}
                       </div>
-                      <p style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
+                      {editingCommentId === comment.id ? (
+                        <div style={{ marginTop: '10px' }}>
+                          <textarea
+                            value={editCommentText}
+                            onChange={(e) => setEditCommentText(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              border: '1px solid var(--border-light)',
+                              minHeight: '80px',
+                              fontFamily: 'inherit',
+                              fontSize: '14px',
+                              resize: 'vertical'
+                            }}
+                            placeholder="Edit your comment..."
+                          />
+                          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                            <button
+                              onClick={() => handleUpdateComment(comment.id)}
+                              className="btn btn-primary"
+                              style={{ padding: '8px 16px', fontSize: '14px' }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="btn"
+                              style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--bg-secondary)' }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
+                      )}
                     </div>
                   </div>
                 ))}
