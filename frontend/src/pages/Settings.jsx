@@ -59,6 +59,19 @@ export default function Settings() {
   const handleAvatarSelect = (e) => {
     const file = e.target.files[0]
     if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)')
+        e.target.value = '' // Clear the input
+        return
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB')
+        e.target.value = '' // Clear the input
+        return
+      }
       setAvatarPreview(URL.createObjectURL(file))
     }
   }
@@ -69,18 +82,32 @@ export default function Settings() {
     
     try {
       const formData = new FormData()
-      if (profile.name) formData.append('display_name', profile.name)
-      if (profile.bio) formData.append('bio', profile.bio)
-      if (fileInputRef.current?.files[0]) {
-        formData.append('avatar', fileInputRef.current.files[0])
+      
+      // Only append fields that have values
+      if (profile.name && profile.name.trim()) {
+        formData.append('display_name', profile.name.trim())
+      }
+      if (profile.bio !== undefined && profile.bio !== null) {
+        formData.append('bio', profile.bio)
+      }
+      
+      // Only append avatar if a valid file is selected
+      const avatarFile = fileInputRef.current?.files?.[0]
+      if (avatarFile && avatarFile.size > 0 && avatarFile.type.startsWith('image/')) {
+        formData.append('avatar', avatarFile)
       }
 
       const response = await api.updateUser(formData)
       
-      // Update localStorage with new data
-      const updatedUser = { ...user, ...profile }
-      localStorage.setItem('user', JSON.stringify(updatedUser))
-      setUser(updatedUser)
+      // Update localStorage with new data from backend response
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user))
+        setUser(response.user)
+        // Update avatar preview if new avatar was uploaded
+        if (response.user.avatar_url) {
+          setAvatarPreview(response.user.avatar_url)
+        }
+      }
       
       toast.success('Profile updated successfully!')
     } catch (error) {

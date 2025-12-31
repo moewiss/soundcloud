@@ -14,6 +14,7 @@ import TrackDetail from "./pages/TrackDetail"
 import UserProfile from "./pages/UserProfile"
 import FollowersList from "./pages/FollowersList"
 import Playlists from "./pages/Playlists"
+import PlaylistDetail from "./pages/PlaylistDetail"
 import Settings from "./pages/Settings"
 import Notifications from "./pages/Notifications"
 import Login from "./pages/Login"
@@ -611,7 +612,7 @@ function AppContent() {
           <Route path="/profile/:id/followers" element={<FollowersList />} />
           <Route path="/profile/:id/following" element={<FollowersList />} />
           <Route path="/playlists" element={<Playlists />} />
-          <Route path="/playlists/:id" element={<Playlists />} />
+          <Route path="/playlists/:id" element={<PlaylistDetail />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/admin" element={<Admin />} />

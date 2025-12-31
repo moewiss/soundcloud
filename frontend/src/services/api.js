@@ -134,7 +134,11 @@ export const api = {
   },
   
   updateUser: async (data) => {
-    const res = await axiosInstance.put('/user', data)
+    const res = await axiosInstance.put('/user', data, {
+      headers: data instanceof FormData ? {
+        'Content-Type': 'multipart/form-data'
+      } : {}
+    })
     return res.data
   },
   

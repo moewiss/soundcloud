@@ -95,7 +95,7 @@ export default function Notifications() {
                 fontSize: '13px',
                 color: 'var(--text-secondary)'
               }}>
-                "{notification.comment}"
+                "{typeof notification.comment === 'string' ? notification.comment : notification.comment.body}"
               </div>
             )}
           </>
