@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
+import { copyToClipboard } from '../utils/clipboard'
 
 export default function UserProfile() {
   const { id } = useParams()
@@ -291,10 +292,11 @@ export default function UserProfile() {
     e?.stopPropagation()
     const trackUrl = `${window.location.origin}/tracks/${trackId}`
     try {
-      await navigator.clipboard.writeText(trackUrl)
+      await copyToClipboard(trackUrl)
       toast.success('Link copied to clipboard!')
     } catch (error) {
-      toast.error('Failed to copy link')
+      console.error('Copy error:', error)
+      toast.error('Failed to copy link. Please copy manually.')
     }
   }
 
