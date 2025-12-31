@@ -311,6 +311,17 @@ export default function UserProfile() {
     }
   }
 
+  const handleShareProfile = async () => {
+    const profileUrl = `${window.location.origin}/profile/${id}`
+    try {
+      await copyToClipboard(profileUrl)
+      toast.success('Profile link copied to clipboard!')
+    } catch (error) {
+      console.error('Copy error:', error)
+      toast.error('Failed to copy link. Please copy manually.')
+    }
+  }
+
   // Render track card
   const renderTrackCard = (track) => (
     <div key={track.id} className="feed-card">

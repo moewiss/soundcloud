@@ -106,9 +106,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/history', [HistoryController::class, 'clear']);
     
     // Notifications
-    Route::get('/notifications', [AuthController::class, 'notifications']);
-    Route::post('/notifications/{id}/read', [AuthController::class, 'markNotificationRead']);
-    Route::post('/notifications/read-all', [AuthController::class, 'markAllNotificationsRead']);
+    Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\NotificationController::class, 'destroy']);
+    Route::delete('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'clearAll']);
 });
 
 // Admin routes
