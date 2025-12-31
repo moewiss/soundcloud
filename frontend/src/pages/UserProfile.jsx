@@ -226,7 +226,7 @@ export default function UserProfile() {
     e?.stopPropagation()
     try {
       const result = await api.toggleLike(trackId)
-      // Update track locally with API response
+      // Update tracks
       setTracks(prev => prev.map(t => 
         t.id === trackId 
           ? { 
@@ -236,8 +236,18 @@ export default function UserProfile() {
             }
           : t
       ))
-      // Also update liked tracks list
+      // Update liked tracks list
       setLikedTracks(prev => prev.map(t => 
+        t.id === trackId 
+          ? { 
+              ...t, 
+              is_liked: result.is_liked,
+              likes_count: result.likes_count
+            }
+          : t
+      ))
+      // Update reposts list
+      setReposts(prev => prev.map(t => 
         t.id === trackId 
           ? { 
               ...t, 

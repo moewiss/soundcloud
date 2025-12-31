@@ -122,12 +122,19 @@ export default function Library() {
     e?.stopPropagation()
     try {
       const result = await api.toggleLike(trackId)
-      // If unliked, remove from the list; otherwise update the count
+      
+      // Update tracks state (for Overview section)
+      setTracks(prev => prev.map(t => 
+        t.id === trackId 
+          ? { ...t, is_liked: result.is_liked, likes_count: result.likes_count }
+          : t
+      ))
+      
+      // Update liked tracks state (for Likes section)
       if (!result.is_liked) {
         setLikedTracks(prev => prev.filter(t => t.id !== trackId))
         toast.success('Removed from likes')
       } else {
-        // Update the track's like count
         setLikedTracks(prev => prev.map(t => 
           t.id === trackId 
             ? { ...t, likes_count: result.likes_count, is_liked: true }
