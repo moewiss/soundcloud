@@ -178,6 +178,11 @@ export const api = {
     return res.data
   },
   
+  updateComment: async (trackId, commentId, body) => {
+    const res = await axiosInstance.put(`/tracks/${trackId}/comments/${commentId}`, { body })
+    return res.data
+  },
+
   deleteComment: async (trackId, commentId) => {
     const res = await axiosInstance.delete(`/tracks/${trackId}/comments/${commentId}`)
     return res.data

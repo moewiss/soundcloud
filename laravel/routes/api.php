@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Comments
     Route::post('/tracks/{track}/comments', [CommentController::class, 'store']);
+    Route::put('/tracks/{track}/comments/{comment}', [CommentController::class, 'update']);
     Route::delete('/tracks/{track}/comments/{comment}', [CommentController::class, 'destroy']);
     
     // Follows

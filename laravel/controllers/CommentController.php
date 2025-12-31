@@ -42,6 +42,29 @@ class CommentController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, Track $track, Comment $comment)
+    {
+        // Only comment owner can edit
+        if ($comment->user_id !== auth()->id()) {
+            abort(403, 'You can only edit your own comments');
+        }
+
+        $validated = $request->validate([
+            'body' => 'required|string|max:1000',
+        ]);
+
+        $comment->update([
+            'body' => $validated['body'],
+        ]);
+
+        $comment->load('user');
+
+        return response()->json([
+            'message' => 'Comment updated successfully',
+            'comment' => $comment,
+        ]);
+    }
+
     public function destroy(Track $track, Comment $comment)
     {
         if ($comment->user_id !== auth()->id() && !auth()->user()->is_admin) {

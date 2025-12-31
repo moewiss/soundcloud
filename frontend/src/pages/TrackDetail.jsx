@@ -10,6 +10,8 @@ export default function TrackDetail() {
   const [track, setTrack] = useState(null)
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
+  const [editingCommentId, setEditingCommentId] = useState(null)
+  const [editCommentText, setEditCommentText] = useState('')
   const [loading, setLoading] = useState(true)
   const [relatedTracks, setRelatedTracks] = useState([])
   const { playTrack, currentTrack, isPlaying, togglePlay, progress, duration } = usePlayer()
@@ -101,6 +103,30 @@ export default function TrackDetail() {
       toast.success('Comment added!')
     } catch (error) {
       toast.error('Failed to add comment')
+    }
+  }
+
+  const handleEditComment = (comment) => {
+    setEditingCommentId(comment.id)
+    setEditCommentText(comment.body)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null)
+    setEditCommentText('')
+  }
+
+  const handleUpdateComment = async (commentId) => {
+    if (!editCommentText.trim()) return
+
+    try {
+      await api.updateComment(id, commentId, editCommentText)
+      setEditingCommentId(null)
+      setEditCommentText('')
+      fetchComments()
+      toast.success('Comment updated!')
+    } catch (error) {
+      toast.error('Failed to update comment')
     }
   }
 
@@ -370,16 +396,73 @@ export default function TrackDetail() {
                     }}>
                       {comment.user?.name?.charAt(0) || 'U'}
                     </div>
-                    <div>
-                      <div style={{ marginBottom: '5px' }}>
-                        <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
-                          {comment.user?.name}
-                        </Link>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                          {new Date(comment.created_at).toLocaleDateString()}
-                        </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
+                            {comment.user?.name}
+                          </Link>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                            {new Date(comment.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {comment.user?.id === user.id && (
+                          <button
+                            onClick={() => handleEditComment(comment)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--primary)',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
+                            onMouseLeave={(e) => e.target.style.background = 'none'}
+                          >
+                            <i className="fas fa-edit"></i> Edit
+                          </button>
+                        )}
                       </div>
-                      <p style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
+                      {editingCommentId === comment.id ? (
+                        <div style={{ marginTop: '10px' }}>
+                          <textarea
+                            value={editCommentText}
+                            onChange={(e) => setEditCommentText(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              border: '1px solid var(--border-light)',
+                              minHeight: '80px',
+                              fontFamily: 'inherit',
+                              fontSize: '14px',
+                              resize: 'vertical'
+                            }}
+                            placeholder="Edit your comment..."
+                          />
+                          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                            <button
+                              onClick={() => handleUpdateComment(comment.id)}
+                              className="btn btn-primary"
+                              style={{ padding: '8px 16px', fontSize: '14px' }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="btn"
+                              style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--bg-secondary)' }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
+                      )}
                     </div>
                   </div>
                 ))}
