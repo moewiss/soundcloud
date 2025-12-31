@@ -1,11 +1,19 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { api } from '../services/api'
+import { requireAuth } from '../utils/auth'
 
 export default function Upload() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
+  
+  // Require authentication to access upload page
+  useEffect(() => {
+    if (!requireAuth(navigate, 'Please login to upload tracks')) {
+      return
+    }
+  }, [])
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [audioFiles, setAudioFiles] = useState([])

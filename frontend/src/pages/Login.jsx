@@ -18,7 +18,11 @@ export default function Login() {
       localStorage.setItem('token', response.token)
       localStorage.setItem('user', JSON.stringify(response.user))
       toast.success('Welcome back! 🎉')
-      window.location.href = '/'
+      
+      // Redirect back to where user came from, or home
+      const redirectTo = localStorage.getItem('redirectAfterLogin') || '/'
+      localStorage.removeItem('redirectAfterLogin')
+      window.location.href = redirectTo
     } catch (error) {
       toast.error(error.response?.data?.message || 'Login failed')
     } finally {

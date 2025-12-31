@@ -5,6 +5,7 @@ import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
 import { copyToClipboard } from '../utils/clipboard'
 import AddToPlaylistModal from '../components/AddToPlaylistModal'
+import { requireAuth } from '../utils/auth'
 
 export default function TrackDetail() {
   const { id } = useParams()
@@ -68,6 +69,8 @@ export default function TrackDetail() {
   }
 
   const handleLike = async () => {
+    if (!requireAuth(navigate, 'Please login to like tracks')) return
+    
     try {
       const result = await api.toggleLike(id)
       // Update track locally with API response
@@ -79,15 +82,13 @@ export default function TrackDetail() {
       toast.success(result.is_liked ? 'Added to likes' : 'Removed from likes')
     } catch (error) {
       console.error('Like error:', error)
-      if (error.response?.status === 401) {
-        toast.error('Please login to like tracks')
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to like track')
-      }
+      toast.error(error.response?.data?.message || 'Failed to like track')
     }
   }
 
   const handleFollow = async () => {
+    if (!requireAuth(navigate, 'Please login to follow users')) return
+    
     try {
       await api.toggleFollow(track.user?.id)
       fetchTrack()
@@ -99,6 +100,7 @@ export default function TrackDetail() {
 
   const handleComment = async (e) => {
     e.preventDefault()
+    if (!requireAuth(navigate, 'Please login to comment')) return
     if (!newComment.trim()) return
 
     try {
@@ -113,6 +115,7 @@ export default function TrackDetail() {
 
   const handleReply = async (e, parentId) => {
     e.preventDefault()
+    if (!requireAuth(navigate, 'Please login to reply')) return
     if (!replyText.trim()) return
 
     try {
@@ -163,6 +166,8 @@ export default function TrackDetail() {
   }
 
   const handleRepost = async () => {
+    if (!requireAuth(navigate, 'Please login to repost tracks')) return
+    
     try {
       const result = await api.toggleRepost(id)
       setTrack(prev => prev ? {
