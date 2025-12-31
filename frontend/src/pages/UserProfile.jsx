@@ -39,6 +39,7 @@ export default function UserProfile() {
       fetchTracks()
       fetchPlaylists()
       fetchLikedTracks()
+      fetchRepostedTracks()
     }
   }, [id])
 
@@ -140,6 +141,16 @@ export default function UserProfile() {
     } catch (error) {
       console.error('Error fetching liked tracks:', error)
       setLikedTracks([])
+    }
+  }
+
+  const fetchRepostedTracks = async () => {
+    try {
+      const data = await api.getUserReposts(id)
+      setReposts(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching reposted tracks:', error)
+      setReposts([])
     }
   }
 
@@ -260,6 +271,16 @@ export default function UserProfile() {
           ? { ...t, is_reposted: result.is_reposted, reposts_count: result.reposts_count }
           : t
       ))
+      // Update reposts list - if unreposted, remove from list
+      if (!result.is_reposted) {
+        setReposts(prev => prev.filter(t => t.id !== trackId))
+      } else {
+        setReposts(prev => prev.map(t => 
+          t.id === trackId 
+            ? { ...t, is_reposted: true, reposts_count: result.reposts_count }
+            : t
+        ))
+      }
       toast.success(result.is_reposted ? 'Reposted!' : 'Unreposted')
     } catch (error) {
       toast.error('Please login to repost')
@@ -481,6 +502,19 @@ export default function UserProfile() {
         ) : (
           <div className="feed-list">
             {likedTracks.map(renderTrackCard)}
+          </div>
+        )
+
+      case 'reposts':
+        return reposts.length === 0 ? (
+          <div className="empty-state">
+            <i className="fas fa-retweet"></i>
+            <h3>No reposted tracks yet</h3>
+            <p>{isOwnProfile ? 'Repost tracks to see them here!' : `${user.name} hasn't reposted any tracks yet`}</p>
+          </div>
+        ) : (
+          <div className="feed-list">
+            {reposts.map(renderTrackCard)}
           </div>
         )
 
