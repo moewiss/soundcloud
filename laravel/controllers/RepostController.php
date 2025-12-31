@@ -25,6 +25,17 @@ class RepostController extends Controller
             $user->repostedTracks()->attach($track->id);
             $message = 'Track reposted successfully';
             $newState = true;
+
+            // Create notification for track owner (if not reposting own track)
+            if ($track->user_id !== $user->id) {
+                \App\Models\Notification::create([
+                    'user_id' => $track->user_id,
+                    'actor_id' => $user->id,
+                    'type' => 'repost',
+                    'track_id' => $track->id,
+                    'message' => $user->name . ' reposted your track "' . $track->title . '"',
+                ]);
+            }
         }
 
         // Refresh the count

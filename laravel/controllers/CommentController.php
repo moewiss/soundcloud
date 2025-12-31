@@ -40,6 +40,35 @@ class CommentController extends Controller
 
         $comment->load('user');
 
+        // Create notification for track owner or parent comment owner
+        $user = auth()->user();
+        if ($validated['parent_id']) {
+            // Reply to comment - notify parent comment owner
+            $parentComment = Comment::find($validated['parent_id']);
+            if ($parentComment && $parentComment->user_id !== $user->id) {
+                \App\Models\Notification::create([
+                    'user_id' => $parentComment->user_id,
+                    'actor_id' => $user->id,
+                    'type' => 'comment_reply',
+                    'track_id' => $track->id,
+                    'comment_id' => $comment->id,
+                    'message' => $user->name . ' replied to your comment',
+                ]);
+            }
+        } else {
+            // New comment - notify track owner
+            if ($track->user_id !== $user->id) {
+                \App\Models\Notification::create([
+                    'user_id' => $track->user_id,
+                    'actor_id' => $user->id,
+                    'type' => 'comment',
+                    'track_id' => $track->id,
+                    'comment_id' => $comment->id,
+                    'message' => $user->name . ' commented on your track "' . $track->title . '"',
+                ]);
+            }
+        }
+
         return response()->json([
             'message' => 'Comment added successfully',
             'comment' => $comment,

@@ -57,6 +57,17 @@ class LikeController extends Controller
             $user->likedTracks()->attach($track->id);
             $message = 'Track liked successfully';
             $newState = true;
+
+            // Create notification for track owner (if not liking own track)
+            if ($track->user_id !== $user->id) {
+                \App\Models\Notification::create([
+                    'user_id' => $track->user_id,
+                    'actor_id' => $user->id,
+                    'type' => 'like',
+                    'track_id' => $track->id,
+                    'message' => $user->name . ' liked your track "' . $track->title . '"',
+                ]);
+            }
         }
 
         // Refresh the count

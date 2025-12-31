@@ -25,6 +25,14 @@ class FollowController extends Controller
         } else {
             $currentUser->following()->attach($userToFollow->id);
             $message = 'Following successfully';
+
+            // Create notification for the followed user
+            \App\Models\Notification::create([
+                'user_id' => $userToFollow->id,
+                'actor_id' => $currentUser->id,
+                'type' => 'follow',
+                'message' => $currentUser->name . ' started following you',
+            ]);
         }
 
         return response()->json([

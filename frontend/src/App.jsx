@@ -34,6 +34,8 @@ function Header() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const menuRef = useRef(null)
   const searchRef = useRef(null)
   const { playTrack } = usePlayer()
@@ -66,6 +68,7 @@ function Header() {
     const storedUser = localStorage.getItem("user")
     if (storedUser) {
       setUser(JSON.parse(storedUser))
+      fetchNotifications()
     }
 
     const handleClickOutside = (e) => {
@@ -80,6 +83,58 @@ function Header() {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [location])
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await api.getNotifications()
+      setNotifications(data.notifications || [])
+      setUnreadCount(data.unread_count || 0)
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error)
+    }
+  }
+
+  const handleNotificationClick = async (notification) => {
+    // Mark as read
+    if (!notification.read) {
+      try {
+        await api.markNotificationAsRead(notification.id)
+        setUnreadCount(prev => Math.max(0, prev - 1))
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error)
+      }
+    }
+
+    // Navigate based on notification type
+    if (notification.track_id) {
+      navigate(`/tracks/${notification.track_id}`)
+    } else if (notification.type === 'follow') {
+      navigate(`/users/${notification.actor_id}`)
+    }
+    setShowNotifications(false)
+  }
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'like': return 'fa-heart'
+      case 'comment': return 'fa-comment'
+      case 'comment_reply': return 'fa-reply'
+      case 'follow': return 'fa-user-plus'
+      case 'repost': return 'fa-retweet'
+      default: return 'fa-bell'
+    }
+  }
+
+  const formatTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000)
+    if (seconds < 60) return 'just now'
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
+  }
 
   // Real-time search - starts with 1 character
   useEffect(() => {
@@ -309,7 +364,7 @@ function Header() {
 
               <div className="header-icon-btn" onClick={() => setShowNotifications(!showNotifications)}>
                 <i className="fas fa-bell"></i>
-                <span className="notification-badge">3</span>
+                {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
               </div>
 
               <Link to="/messages" className="header-icon-btn">
@@ -365,24 +420,32 @@ function Header() {
                     <span>Notifications</span>
                     <Link to="/notifications">See all</Link>
                   </div>
-                  <div className="notification-item">
-                    <div className="notification-icon like">
-                      <i className="fas fa-heart"></i>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      No notifications yet
                     </div>
-                    <div className="notification-content">
-                      <strong>Sarah</strong> liked your track
-                      <span className="notification-time">2 hours ago</span>
-                    </div>
-                  </div>
-                  <div className="notification-item">
-                    <div className="notification-icon follow">
-                      <i className="fas fa-user-plus"></i>
-                    </div>
-                    <div className="notification-content">
-                      <strong>Michael</strong> started following you
-                      <span className="notification-time">5 hours ago</span>
-                    </div>
-                  </div>
+                  ) : (
+                    notifications.slice(0, 5).map(notification => (
+                      <div 
+                        key={notification.id}
+                        className="notification-item"
+                        onClick={() => handleNotificationClick(notification)}
+                        style={{ 
+                          cursor: 'pointer',
+                          background: notification.read ? 'transparent' : 'var(--primary-soft)',
+                          opacity: notification.read ? 0.7 : 1
+                        }}
+                      >
+                        <div className={`notification-icon ${notification.type}`}>
+                          <i className={`fas ${getNotificationIcon(notification.type)}`}></i>
+                        </div>
+                        <div className="notification-content">
+                          <span dangerouslySetInnerHTML={{ __html: notification.message.replace(notification.actor?.name || '', `<strong>${notification.actor?.name || 'Someone'}</strong>`) }}></span>
+                          <span className="notification-time">{formatTimeAgo(notification.created_at)}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </>
