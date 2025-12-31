@@ -173,8 +173,11 @@ export const api = {
     return res.data
   },
   
-  addComment: async (trackId, body) => {
-    const res = await axiosInstance.post(`/tracks/${trackId}/comments`, { body })
+  addComment: async (trackId, body, parentId = null) => {
+    const res = await axiosInstance.post(`/tracks/${trackId}/comments`, { 
+      body,
+      parent_id: parentId 
+    })
     return res.data
   },
 

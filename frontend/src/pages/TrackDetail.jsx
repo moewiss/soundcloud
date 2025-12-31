@@ -11,6 +11,8 @@ export default function TrackDetail() {
   const [track, setTrack] = useState(null)
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
+  const [replyingTo, setReplyingTo] = useState(null)
+  const [replyText, setReplyText] = useState('')
   const [editingCommentId, setEditingCommentId] = useState(null)
   const [editCommentText, setEditCommentText] = useState('')
   const [loading, setLoading] = useState(true)
@@ -107,6 +109,21 @@ export default function TrackDetail() {
     }
   }
 
+  const handleReply = async (e, parentId) => {
+    e.preventDefault()
+    if (!replyText.trim()) return
+
+    try {
+      await api.addComment(id, replyText, parentId)
+      setReplyText('')
+      setReplyingTo(null)
+      fetchComments()
+      toast.success('Reply added!')
+    } catch (error) {
+      toast.error('Failed to add reply')
+    }
+  }
+
   const handleEditComment = (comment) => {
     setEditingCommentId(comment.id)
     setEditCommentText(comment.body)
@@ -128,6 +145,18 @@ export default function TrackDetail() {
       toast.success('Comment updated!')
     } catch (error) {
       toast.error('Failed to update comment')
+    }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return
+
+    try {
+      await api.deleteComment(id, commentId)
+      fetchComments()
+      toast.success('Comment deleted!')
+    } catch (error) {
+      toast.error('Failed to delete comment')
     }
   }
 
@@ -407,89 +436,271 @@ export default function TrackDetail() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {comments.map(comment => (
-                  <div key={comment.id} style={{ display: 'flex', gap: '15px' }}>
-                    <div style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: 'var(--primary-soft)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      color: 'var(--primary)',
-                      fontWeight: '600'
-                    }}>
-                      {comment.user?.name?.charAt(0) || 'U'}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                          <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
-                            {comment.user?.name}
-                          </Link>
-                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                            {new Date(comment.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {comment.user?.id === user.id && (
-                          <button
-                            onClick={() => handleEditComment(comment)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--primary)',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
-                            onMouseLeave={(e) => e.target.style.background = 'none'}
-                          >
-                            <i className="fas fa-edit"></i> Edit
-                          </button>
-                        )}
+                  <div key={comment.id}>
+                    {/* Parent Comment */}
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'var(--primary-soft)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: 'var(--primary)',
+                        fontWeight: '600'
+                      }}>
+                        {comment.user?.name?.charAt(0) || 'U'}
                       </div>
-                      {editingCommentId === comment.id ? (
-                        <div style={{ marginTop: '10px' }}>
-                          <textarea
-                            value={editCommentText}
-                            onChange={(e) => setEditCommentText(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              borderRadius: '8px',
-                              border: '1px solid var(--border-light)',
-                              minHeight: '80px',
-                              fontFamily: 'inherit',
-                              fontSize: '14px',
-                              resize: 'vertical'
-                            }}
-                            placeholder="Edit your comment..."
-                          />
-                          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div>
+                            <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
+                              {comment.user?.name}
+                            </Link>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                              {new Date(comment.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {(comment.user?.id === user.id || user.is_admin) && (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => handleEditComment(comment)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--primary)',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
+                                onMouseLeave={(e) => e.target.style.background = 'none'}
+                              >
+                                <i className="fas fa-edit"></i> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#dc3545',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.target.style.background = 'rgba(220, 53, 69, 0.1)'}
+                                onMouseLeave={(e) => e.target.style.background = 'none'}
+                              >
+                                <i className="fas fa-trash"></i> Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {editingCommentId === comment.id ? (
+                          <div style={{ marginTop: '10px' }}>
+                            <textarea
+                              value={editCommentText}
+                              onChange={(e) => setEditCommentText(e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '10px',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-light)',
+                                minHeight: '80px',
+                                fontFamily: 'inherit',
+                                fontSize: '14px',
+                                resize: 'vertical'
+                              }}
+                              placeholder="Edit your comment..."
+                            />
+                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                              <button
+                                onClick={() => handleUpdateComment(comment.id)}
+                                className="btn btn-primary"
+                                style={{ padding: '8px 16px', fontSize: '14px' }}
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="btn"
+                                style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--bg-secondary)' }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>{comment.body}</p>
                             <button
-                              onClick={() => handleUpdateComment(comment.id)}
-                              className="btn btn-primary"
-                              style={{ padding: '8px 16px', fontSize: '14px' }}
+                              onClick={() => setReplyingTo(comment.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--primary)',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                padding: '4px 0',
+                                fontWeight: '500'
+                              }}
                             >
-                              Save
+                              <i className="fas fa-reply"></i> Reply
+                            </button>
+                          </>
+                        )}
+
+                        {/* Reply Form */}
+                        {replyingTo === comment.id && (
+                          <form onSubmit={(e) => handleReply(e, comment.id)} style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                            <input
+                              type="text"
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder={`Reply to ${comment.user?.name}...`}
+                              style={{
+                                flex: 1,
+                                padding: '8px 12px',
+                                background: 'var(--bg-white)',
+                                border: '1px solid var(--border-light)',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: '13px'
+                              }}
+                              autoFocus
+                            />
+                            <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                              Reply
                             </button>
                             <button
-                              onClick={handleCancelEdit}
+                              type="button"
+                              onClick={() => { setReplyingTo(null); setReplyText(''); }}
                               className="btn"
-                              style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--bg-secondary)' }}
+                              style={{ padding: '8px 16px', fontSize: '13px' }}
                             >
                               Cancel
                             </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
-                      )}
+                          </form>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Nested Replies */}
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div style={{ marginLeft: '55px', marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {comment.replies.map(reply => (
+                          <div key={reply.id} style={{ display: 'flex', gap: '15px' }}>
+                            <div style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: 'var(--primary-soft)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              color: 'var(--primary)',
+                              fontWeight: '600',
+                              fontSize: '13px'
+                            }}>
+                              {reply.user?.name?.charAt(0) || 'U'}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                  <Link to={`/users/${reply.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)', fontSize: '14px' }}>
+                                    {reply.user?.name}
+                                  </Link>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+                                    {new Date(reply.created_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                {(reply.user?.id === user.id || user.is_admin) && (
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                      onClick={() => handleEditComment(reply)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--primary)',
+                                        cursor: 'pointer',
+                                        fontSize: '11px',
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        transition: 'background 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
+                                      onMouseLeave={(e) => e.target.style.background = 'none'}
+                                    >
+                                      <i className="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteComment(reply.id)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#dc3545',
+                                        cursor: 'pointer',
+                                        fontSize: '11px',
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        transition: 'background 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => e.target.style.background = 'rgba(220, 53, 69, 0.1)'}
+                                      onMouseLeave={(e) => e.target.style.background = 'none'}
+                                    >
+                                      <i className="fas fa-trash"></i> Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              {editingCommentId === reply.id ? (
+                                <div style={{ marginTop: '10px' }}>
+                                  <textarea
+                                    value={editCommentText}
+                                    onChange={(e) => setEditCommentText(e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px',
+                                      borderRadius: '6px',
+                                      border: '1px solid var(--border-light)',
+                                      minHeight: '60px',
+                                      fontFamily: 'inherit',
+                                      fontSize: '13px',
+                                      resize: 'vertical'
+                                    }}
+                                    placeholder="Edit your reply..."
+                                  />
+                                  <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                                    <button
+                                      onClick={() => handleUpdateComment(reply.id)}
+                                      className="btn btn-primary"
+                                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={handleCancelEdit}
+                                      className="btn"
+                                      style={{ padding: '6px 12px', fontSize: '12px', background: 'var(--bg-secondary)' }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{reply.body}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

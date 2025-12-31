@@ -11,8 +11,10 @@ class CommentController extends Controller
 {
     public function index(Track $track)
     {
+        // Get only parent comments (no parent_id) with their replies
         $comments = $track->comments()
-            ->with('user')
+            ->whereNull('parent_id')
+            ->with(['user', 'replies.user'])
             ->latest()
             ->get();
 
@@ -27,11 +29,13 @@ class CommentController extends Controller
 
         $validated = $request->validate([
             'body' => 'required|string|max:1000',
+            'parent_id' => 'nullable|exists:comments,id',
         ]);
 
         $comment = $track->comments()->create([
             'user_id' => auth()->id(),
             'body' => $validated['body'],
+            'parent_id' => $validated['parent_id'] ?? null,
         ]);
 
         $comment->load('user');
@@ -44,8 +48,8 @@ class CommentController extends Controller
 
     public function update(Request $request, Track $track, Comment $comment)
     {
-        // Only comment owner can edit
-        if ($comment->user_id !== auth()->id()) {
+        // Admin can edit any comment, users can only edit their own
+        if ($comment->user_id !== auth()->id() && !auth()->user()->is_admin) {
             abort(403, 'You can only edit your own comments');
         }
 
