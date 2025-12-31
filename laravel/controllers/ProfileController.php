@@ -58,6 +58,7 @@ class ProfileController extends Controller
             'followers_count' => $user->followers()->count(),
             'following_count' => $user->following()->count(),
             'likes_count' => $user->likedTracks()->count(),
+            'reposts_count' => $user->repostedTracks()->count(),
         ];
 
         // Check if current user is following this user

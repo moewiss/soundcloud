@@ -45,6 +45,12 @@ class Track extends Model
             ->withTimestamps();
     }
 
+    public function reposts(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'reposts')
+            ->withTimestamps();
+    }
+
     public function comments()
     {
         return $this->hasMany(Comment::class);

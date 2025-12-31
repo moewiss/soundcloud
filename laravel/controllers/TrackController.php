@@ -14,7 +14,7 @@ class TrackController extends Controller
     {
         $query = Track::approved()
             ->with(['user.profile'])
-            ->withCount(['likes', 'comments']);
+            ->withCount(['likes', 'comments', 'reposts']);
 
         // Filter by user_id if provided
         if ($request->has('user_id')) {
@@ -23,20 +23,28 @@ class TrackController extends Controller
 
         $tracks = $query->latest()->paginate(20);
 
-        // Get all liked track IDs for current user (if authenticated) in ONE query
+        // Get all liked and reposted track IDs for current user (if authenticated) in ONE query
         $likedTrackIds = [];
+        $repostedTrackIds = [];
         if (auth()->check()) {
             $likedTrackIds = auth()->user()
                 ->likedTracks()
                 ->pluck('track_id')
                 ->toArray();
+            
+            $repostedTrackIds = auth()->user()
+                ->repostedTracks()
+                ->pluck('track_id')
+                ->toArray();
         }
 
-        // Add is_liked and ensure audio_url is present
-        $tracks->getCollection()->transform(function ($track) use ($likedTrackIds) {
+        // Add is_liked, is_reposted and ensure audio_url is present
+        $tracks->getCollection()->transform(function ($track) use ($likedTrackIds, $repostedTrackIds) {
             $track->is_liked = in_array($track->id, $likedTrackIds);
+            $track->is_reposted = in_array($track->id, $repostedTrackIds);
             $track->likes_count = $track->likes_count ?? 0;
             $track->comments_count = $track->comments_count ?? 0;
+            $track->reposts_count = $track->reposts_count ?? 0;
             $track->plays_count = $track->plays ?? 0;
             // Ensure audio_url is included
             $track->audio_url = $track->audio_url;
@@ -54,7 +62,7 @@ class TrackController extends Controller
         }
 
         $track->load(['user.profile']);
-        $track->loadCount(['likes', 'comments']);
+        $track->loadCount(['likes', 'comments', 'reposts']);
         $track->incrementPlays();
 
         // Build response with all necessary data
@@ -69,7 +77,9 @@ class TrackController extends Controller
             'plays_count' => $track->plays,
             'likes_count' => $track->likes_count ?? 0,
             'comments_count' => $track->comments_count ?? 0,
+            'reposts_count' => $track->reposts_count ?? 0,
             'is_liked' => auth()->check() ? auth()->user()->hasLiked($track) : false,
+            'is_reposted' => auth()->check() ? auth()->user()->hasReposted($track) : false,
             'created_at' => $track->created_at,
             'updated_at' => $track->updated_at,
             'user' => $track->user,

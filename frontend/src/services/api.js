@@ -177,15 +177,39 @@ export const api = {
     const res = await axiosInstance.post(`/tracks/${trackId}/comments`, { body })
     return res.data
   },
-  
+
   updateComment: async (trackId, commentId, body) => {
     const res = await axiosInstance.put(`/tracks/${trackId}/comments/${commentId}`, { body })
     return res.data
   },
-
+  
   deleteComment: async (trackId, commentId) => {
     const res = await axiosInstance.delete(`/tracks/${trackId}/comments/${commentId}`)
     return res.data
+  },
+
+  // Reposts
+  toggleRepost: async (trackId) => {
+    const res = await axiosInstance.post(`/tracks/${trackId}/repost`)
+    return res.data
+  },
+
+  getRepostedTracks: async () => {
+    const res = await axiosInstance.get('/user/reposts')
+    // Handle paginated response
+    if (res.data.data) {
+      return res.data.data
+    }
+    return Array.isArray(res.data) ? res.data : []
+  },
+
+  getUserReposts: async (userId) => {
+    const res = await axiosInstance.get(`/users/${userId}/reposts`)
+    // Handle paginated response
+    if (res.data.data) {
+      return res.data.data
+    }
+    return Array.isArray(res.data) ? res.data : []
   },
 
   // Follows

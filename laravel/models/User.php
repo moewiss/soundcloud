@@ -53,6 +53,17 @@ class User extends Authenticatable
         return $this->likedTracks()->where('track_id', $track->id)->exists();
     }
 
+    public function repostedTracks(): BelongsToMany
+    {
+        return $this->belongsToMany(Track::class, 'reposts')
+            ->withTimestamps();
+    }
+
+    public function hasReposted(Track $track): bool
+    {
+        return $this->repostedTracks()->where('track_id', $track->id)->exists();
+    }
+
     public function followers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'follows', 'following_id', 'follower_id')

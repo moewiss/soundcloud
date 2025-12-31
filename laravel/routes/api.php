@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\PlaylistController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\HistoryController;
+use App\Http\Controllers\Api\RepostController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,6 +37,9 @@ Route::get('/users/{id}/following', [FollowController::class, 'following']);
 
 // User's liked tracks (public read)
 Route::get('/users/{id}/likes', [LikeController::class, 'userLikes']);
+
+// User's reposted tracks (public read)
+Route::get('/users/{id}/reposts', [RepostController::class, 'userReposts']);
 
 // Search
 Route::get('/search', [SearchController::class, 'search']);
@@ -75,6 +79,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tracks/{track}/comments', [CommentController::class, 'store']);
     Route::put('/tracks/{track}/comments/{comment}', [CommentController::class, 'update']);
     Route::delete('/tracks/{track}/comments/{comment}', [CommentController::class, 'destroy']);
+    
+    // Reposts
+    Route::post('/tracks/{track}/repost', [RepostController::class, 'toggle']);
+    Route::get('/me/reposts', [RepostController::class, 'index']);
+    Route::get('/user/reposts', [RepostController::class, 'index']);
     
     // Follows
     Route::post('/users/{id}/follow', [FollowController::class, 'toggle']);

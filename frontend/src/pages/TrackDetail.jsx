@@ -130,6 +130,31 @@ export default function TrackDetail() {
     }
   }
 
+  const handleRepost = async () => {
+    try {
+      const result = await api.toggleRepost(id)
+      setTrack(prev => prev ? {
+        ...prev,
+        is_reposted: result.is_reposted,
+        reposts_count: result.reposts_count
+      } : prev)
+      toast.success(result.is_reposted ? 'Reposted!' : 'Unreposted')
+    } catch (error) {
+      console.error('Repost error:', error)
+      toast.error('Please login to repost tracks')
+    }
+  }
+
+  const handleShare = async () => {
+    const trackUrl = `${window.location.origin}/tracks/${id}`
+    try {
+      await navigator.clipboard.writeText(trackUrl)
+      toast.success('Link copied to clipboard!')
+    } catch (error) {
+      toast.error('Failed to copy link')
+    }
+  }
+
   const formatTime = (sec) => {
     if (!sec) return '0:00'
     const m = Math.floor(sec / 60)
@@ -396,73 +421,16 @@ export default function TrackDetail() {
                     }}>
                       {comment.user?.name?.charAt(0) || 'U'}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                          <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
-                            {comment.user?.name}
-                          </Link>
-                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                            {new Date(comment.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {comment.user?.id === user.id && (
-                          <button
-                            onClick={() => handleEditComment(comment)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--primary)',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
-                            onMouseLeave={(e) => e.target.style.background = 'none'}
-                          >
-                            <i className="fas fa-edit"></i> Edit
-                          </button>
-                        )}
+                    <div>
+                      <div style={{ marginBottom: '5px' }}>
+                        <Link to={`/users/${comment.user?.id}`} style={{ fontWeight: '500', marginRight: '10px', color: 'var(--text-primary)' }}>
+                          {comment.user?.name}
+                        </Link>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                          {new Date(comment.created_at).toLocaleDateString()}
+                        </span>
                       </div>
-                      {editingCommentId === comment.id ? (
-                        <div style={{ marginTop: '10px' }}>
-                          <textarea
-                            value={editCommentText}
-                            onChange={(e) => setEditCommentText(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              borderRadius: '8px',
-                              border: '1px solid var(--border-light)',
-                              minHeight: '80px',
-                              fontFamily: 'inherit',
-                              fontSize: '14px',
-                              resize: 'vertical'
-                            }}
-                            placeholder="Edit your comment..."
-                          />
-                          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                            <button
-                              onClick={() => handleUpdateComment(comment.id)}
-                              className="btn btn-primary"
-                              style={{ padding: '8px 16px', fontSize: '14px' }}
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              className="btn"
-                              style={{ padding: '8px 16px', fontSize: '14px', background: 'var(--bg-secondary)' }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
-                      )}
+                      <p style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
                     </div>
                   </div>
                 ))}
