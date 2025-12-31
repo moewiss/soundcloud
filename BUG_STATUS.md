@@ -56,18 +56,22 @@
 
 ---
 
-### 4. Upload Crash (PENDING TESTING)
-**Status:** NOT REPRODUCED ⏳  
-**Note:** Please test after deploying these fixes. The console errors you sent were about avatar upload (now fixed) and notifications (now fixed), so the upload page might be working now!
+### 4. Upload Crash ✅
+**Status:** FIXED  
+**What Changed:**
+- Fixed `ReferenceError: audioFile is not defined`
+- Changed variable reference from `audioFile` to `audioFiles[0]`
+- Shows "3 files selected" when multiple files
+- Shows "(+ 2 more)" for additional files
+- Properly clears files and form data
 
-**To Test:**
-1. Go to Upload page
-2. Select 1 or multiple audio files
-3. Fill in title, description, category
-4. Click Upload
-5. Should work without crashing
-
-If it still crashes, send the new console errors!
+**Test After Deploy:**
+1. Go to Upload page ✅
+2. Select 1 audio file → shows filename and size
+3. Select multiple files → shows "X files selected"
+4. Fill in title, category, description
+5. Click Upload → uploads all files successfully
+6. No crash, redirects to Library
 
 ---
 
@@ -82,19 +86,21 @@ If it still crashes, send the new console errors!
 
 ## 🚀 DEPLOY ALL FIXES NOW
 
+**ALL 4 CRITICAL BUGS FIXED! ✅**
+
 **Run these commands on your server:**
 
 ```bash
 ssh root@185.250.36.33
 cd /root/islamic-soundcloud
 
-# Pull latest code
+# Pull latest code (includes all 4 fixes)
 git pull origin main
 
 # Backend restart (avatar validation, profile update)
 docker compose restart app
 
-# Rebuild frontend (notifications fix, playlist page, avatar UI)
+# Rebuild frontend (notifications, playlist, upload, avatar)
 cd frontend
 npm install  # Just in case new dependencies
 npm run build
@@ -108,6 +114,8 @@ docker compose ps
 
 echo "✅ Deployment complete! Hard refresh browser (Ctrl+Shift+R)"
 ```
+
+**Latest Commit:** `9c74ba2` - "fix: CRITICAL - upload page crash (audioFile undefined)"
 
 **Expected result:** All containers should show status "Up"
 
@@ -139,11 +147,13 @@ echo "✅ Deployment complete! Hard refresh browser (Ctrl+Shift+R)"
 - [ ] Share button copies link
 - [ ] (If owner) Remove track button works
 
-### Upload (TEST THIS!)
-- [ ] Go to Upload page
-- [ ] Select 1 audio file
+### Upload ✅
+- [ ] Go to Upload page (no crash on load!)
+- [ ] Select 1 audio file → shows filename
 - [ ] Fill in title, category
-- [ ] Click Upload
+- [ ] Click Upload → works!
+- [ ] Test multiple files: shows "3 files selected"
+- [ ] Upload multiple → all upload successfully
 - [ ] No crash, redirects to Library
 
 ### Search
