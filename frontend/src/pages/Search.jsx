@@ -21,7 +21,7 @@ export default function Search() {
   const filters = [
     { id: 'all', label: 'Everything', icon: 'fa-globe' },
     { id: 'tracks', label: 'Tracks', icon: 'fa-music' },
-    { id: 'users', label: 'People', icon: 'fa-users' },
+    { id: 'people', label: 'People', icon: 'fa-users' },
     { id: 'playlists', label: 'Playlists', icon: 'fa-list' }
   ]
 
@@ -30,7 +30,7 @@ export default function Search() {
     loadAllTracks()
   }, [])
 
-  // Real-time search when query changes
+  // Real-time search when query or filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
       performSearch(searchQuery)
@@ -40,7 +40,7 @@ export default function Search() {
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, allTracks, allUsers])
+  }, [searchQuery, activeFilter])
 
   const loadAllTracks = async () => {
     setLoading(true)
@@ -73,30 +73,23 @@ export default function Search() {
   }
 
   const performSearch = async (q) => {
-    if (!q.trim()) {
-      setResults({ tracks: allTracks, users: [], playlists: [] })
-      setHasSearched(false)
-      return
-    }
-    
     setHasSearched(true)
+    setLoading(true)
     
-    const searchLower = q.toLowerCase()
-    
-    // Local filtering for tracks
-    const filteredTracks = allTracks.filter(track => 
-      track.title?.toLowerCase().includes(searchLower) ||
-      track.user?.name?.toLowerCase().includes(searchLower) ||
-      track.category?.toLowerCase().includes(searchLower) ||
-      track.description?.toLowerCase().includes(searchLower)
-    )
-    
-    // Local filtering for users/people
-    const filteredUsers = allUsers.filter(user => 
-      user.name?.toLowerCase().includes(searchLower)
-    )
-    
-    setResults({ tracks: filteredTracks, users: filteredUsers, playlists: [] })
+    try {
+      // Use API search with filter
+      const data = await api.search(q, activeFilter === 'all' ? 'everything' : activeFilter)
+      setResults({
+        tracks: data.tracks || [],
+        users: data.users || [],
+        playlists: data.playlists || []
+      })
+    } catch (error) {
+      console.error('Search error:', error)
+      toast.error('Search failed')
+    } finally {
+      setLoading(false)
+    }
     
     // Also try API search for more results
     try {
