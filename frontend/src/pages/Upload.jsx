@@ -8,11 +8,12 @@ export default function Upload() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [audioFile, setAudioFile] = useState(null)
+  const [audioFiles, setAudioFiles] = useState([])
   const [coverFile, setCoverFile] = useState(null)
   const [coverPreview, setCoverPreview] = useState(null)
   const [audioDuration, setAudioDuration] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [currentFileIndex, setCurrentFileIndex] = useState(0)
   const fileInputRef = useRef(null)
   const coverInputRef = useRef(null)
 
@@ -25,7 +26,8 @@ export default function Upload() {
   })
 
   const categories = [
-    'Music', 'Podcasts', 'Lectures', 'Audiobooks', 'Stories', 
+    'Nasheeds', 'Quran', 'Duas', 'Stories',
+    'Lectures', 'Podcasts', 'Audiobooks', 
     'Education', 'Entertainment', 'News', 'Other'
   ]
 
@@ -41,27 +43,33 @@ export default function Upload() {
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file && file.type.startsWith('audio/')) {
-      processAudioFile(file)
-    } else {
-      toast.error('Please upload an audio file')
-    }
+    const files = Array.from(e.dataTransfer.files)
+    processAudioFiles(files)
   }
 
   const handleFileSelect = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      processAudioFile(file)
+    const files = Array.from(e.target.files)
+    if (files.length > 0) {
+      processAudioFiles(files)
     }
   }
 
-  const processAudioFile = (file) => {
-    setAudioFile(file)
-    setFormData(prev => ({ ...prev, title: file.name.replace(/\.[^/.]+$/, '') }))
+  const processAudioFiles = (files) => {
+    const audioFilesArray = files.filter(f => f.type.startsWith('audio/'))
+    if (audioFilesArray.length === 0) {
+      toast.error('Please upload audio files')
+      return
+    }
+
+    setAudioFiles(audioFilesArray)
+    setCurrentFileIndex(0)
     
+    // Set title from first file
+    setFormData(prev => ({ ...prev, title: audioFilesArray[0].name.replace(/\.[^/.]+$/, '') }))
+    
+    // Get duration of first file
     const audio = new Audio()
-    audio.src = URL.createObjectURL(file)
+    audio.src = URL.createObjectURL(audioFilesArray[0])
     audio.onloadedmetadata = () => {
       setAudioDuration(audio.duration)
     }
@@ -86,8 +94,8 @@ export default function Upload() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!audioFile) {
-      toast.error('Please select an audio file')
+    if (audioFiles.length === 0) {
+      toast.error('Please select audio file(s)')
       return
     }
 
@@ -97,35 +105,43 @@ export default function Upload() {
     }
 
     setLoading(true)
+    let successCount = 0
 
     try {
-      const data = new FormData()
-      data.append('file', audioFile)  // Changed from 'audio' to 'file' to match backend
-      data.append('title', formData.title)
-      data.append('category', formData.category)
-      data.append('description', formData.description)
-      if (coverFile) data.append('cover', coverFile)
+      // Upload all files
+      for (let i = 0; i < audioFiles.length; i++) {
+        const file = audioFiles[i]
+        const data = new FormData()
+        data.append('file', file)
+        
+        // Use custom title for each file or default to filename
+        const title = audioFiles.length === 1 
+          ? formData.title 
+          : `${formData.title} - ${i + 1}`
+        
+        data.append('title', title)
+        data.append('category', formData.category)
+        data.append('description', formData.description)
+        if (coverFile && i === 0) data.append('cover', coverFile) // Only first file gets cover
 
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 200)
+        const progress = ((i + 1) / audioFiles.length) * 90
+        setUploadProgress(progress)
 
-      await api.uploadTrack(data)
+        await api.uploadTrack(data)
+        successCount++
+      }
       
       setUploadProgress(100)
-      clearInterval(progressInterval)
       
-      toast.success('Track uploaded successfully!')
+      toast.success(`${successCount} track(s) uploaded successfully!`)
       navigate('/library')
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Failed to upload track')
+      if (successCount > 0) {
+        toast.success(`${successCount} of ${audioFiles.length} tracks uploaded`)
+      } else {
+        toast.error('Failed to upload tracks')
+      }
     } finally {
       setLoading(false)
       setUploadProgress(0)
@@ -161,6 +177,7 @@ export default function Upload() {
               type="file"
               ref={fileInputRef}
               accept="audio/*"
+              multiple
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
@@ -180,10 +197,10 @@ export default function Upload() {
             </div>
 
             <h2 style={{ fontSize: '24px', marginBottom: '15px', color: 'var(--text-primary)' }}>
-              Drag and drop your tracks & albums here
+              Drag and drop your tracks here
             </h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '25px' }}>
-              or choose files to upload
+              or choose files to upload (multiple files supported)
             </p>
 
             <button
@@ -405,3 +422,4 @@ export default function Upload() {
     </div>
   )
 }
+
