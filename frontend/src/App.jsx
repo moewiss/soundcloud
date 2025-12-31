@@ -85,12 +85,17 @@ function Header() {
   }, [location])
 
   const fetchNotifications = async () => {
+    if (!localStorage.getItem('token')) {
+      return // Don't fetch if not logged in
+    }
+    
     try {
       const data = await api.getNotifications()
       setNotifications(data.notifications || [])
       setUnreadCount(data.unread_count || 0)
     } catch (error) {
       console.error('Failed to fetch notifications:', error)
+      // Don't crash the app, just log the error
     }
   }
 
@@ -98,7 +103,7 @@ function Header() {
     // Mark as read
     if (!notification.read) {
       try {
-        await api.markNotificationAsRead(notification.id)
+        await api.markNotificationRead(notification.id)
         setUnreadCount(prev => Math.max(0, prev - 1))
       } catch (error) {
         console.error('Failed to mark notification as read:', error)
