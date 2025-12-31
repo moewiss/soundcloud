@@ -12,6 +12,7 @@ import Search from "./pages/Search"
 import Upload from "./pages/Upload"
 import TrackDetail from "./pages/TrackDetail"
 import UserProfile from "./pages/UserProfile"
+import FollowersList from "./pages/FollowersList"
 import Playlists from "./pages/Playlists"
 import Settings from "./pages/Settings"
 import Notifications from "./pages/Notifications"
@@ -538,6 +539,9 @@ function AppContent() {
           <Route path="/upload" element={<Upload />} />
           <Route path="/tracks/:id" element={<TrackDetail />} />
           <Route path="/users/:id" element={<UserProfile />} />
+          <Route path="/profile/:id" element={<UserProfile />} />
+          <Route path="/profile/:id/followers" element={<FollowersList />} />
+          <Route path="/profile/:id/following" element={<FollowersList />} />
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlists/:id" element={<Playlists />} />
           <Route path="/settings" element={<Settings />} />

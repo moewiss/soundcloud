@@ -68,10 +68,24 @@ export default function Settings() {
     setLoading(true)
     
     try {
-      toast.success('Profile updated!')
-      localStorage.setItem('user', JSON.stringify({ ...user, ...profile }))
+      const formData = new FormData()
+      if (profile.name) formData.append('display_name', profile.name)
+      if (profile.bio) formData.append('bio', profile.bio)
+      if (fileInputRef.current?.files[0]) {
+        formData.append('avatar', fileInputRef.current.files[0])
+      }
+
+      const response = await api.updateUser(formData)
+      
+      // Update localStorage with new data
+      const updatedUser = { ...user, ...profile }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      setUser(updatedUser)
+      
+      toast.success('Profile updated successfully!')
     } catch (error) {
-      toast.error('Failed to update profile')
+      console.error('Profile update error:', error)
+      toast.error(error.response?.data?.message || 'Failed to update profile')
     } finally {
       setLoading(false)
     }

@@ -18,6 +18,7 @@ export default function UserProfile() {
   const [followLoading, setFollowLoading] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followChecked, setFollowChecked] = useState(false)
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
   const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   const isLoggedIn = !!localStorage.getItem('token')
@@ -623,8 +624,22 @@ export default function UserProfile() {
               {user.bio || 'No bio yet'}
             </p>
             <div style={{ display: 'flex', gap: '30px', color: 'rgba(255,255,255,0.9)', fontSize: '14px' }}>
-              <span><strong>{user.followers_count || 0}</strong> Followers</span>
-              <span><strong>{user.following_count || 0}</strong> Following</span>
+              <span 
+                style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
+                onClick={() => navigate(`/profile/${id}/followers`)}
+                onMouseEnter={(e) => e.target.style.opacity = '0.7'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                <strong>{user.followers_count || 0}</strong> Followers
+              </span>
+              <span 
+                style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
+                onClick={() => navigate(`/profile/${id}/following`)}
+                onMouseEnter={(e) => e.target.style.opacity = '0.7'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                <strong>{user.following_count || 0}</strong> Following
+              </span>
               <span><strong>{tracks.length}</strong> Tracks</span>
             </div>
           </div>
@@ -671,26 +686,103 @@ export default function UserProfile() {
                 <i className="fas fa-edit"></i> Edit Profile
               </button>
             )}
-            <button style={{
-              padding: '10px 16px',
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              color: 'white',
-              cursor: 'pointer'
-            }}>
+            <button 
+              onClick={handleShareProfile}
+              style={{
+                padding: '10px 16px',
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+              onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+            >
               <i className="fas fa-share"></i>
             </button>
-            <button style={{
-              padding: '10px 16px',
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              color: 'white',
-              cursor: 'pointer'
-            }}>
-              <i className="fas fa-ellipsis-h"></i>
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                style={{
+                  padding: '10px 16px',
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+              >
+                <i className="fas fa-ellipsis-h"></i>
+              </button>
+              {showMoreMenu && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: '8px',
+                  background: 'var(--bg-card)',
+                  borderRadius: 'var(--radius-sm)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  padding: '8px 0',
+                  minWidth: '200px',
+                  zIndex: 1000
+                }}>
+                  <button
+                    onClick={() => {
+                      handleShareProfile()
+                      setShowMoreMenu(false)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-primary)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
+                    onMouseLeave={(e) => e.target.style.background = 'none'}
+                  >
+                    <i className="fas fa-share"></i> Share Profile
+                  </button>
+                  {isLoggedIn && !isOwnProfile && (
+                    <button
+                      onClick={() => {
+                        toast.info('Report feature coming soon')
+                        setShowMoreMenu(false)
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-primary)',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
+                      onMouseLeave={(e) => e.target.style.background = 'none'}
+                    >
+                      <i className="fas fa-flag"></i> Report User
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
