@@ -1,66 +1,73 @@
 # Bug Status Report
 
-## ✅ FIXED (Deploy & Test)
+## ✅ FIXED (Ready to Deploy!)
 
-### 1. Profile Photo Upload
-**Status:** FIXED ✅  
+### 1. Profile Photo Upload ✅
+**Status:** FIXED  
 **What Changed:**
-- Backend now returns full user data with avatar_url after save
-- Added DELETE `/profile/avatar` endpoint for removing photos
-- Frontend will show avatar immediately after upload
+- Added file type validation (JPEG, PNG, GIF, WebP only)
+- Added file size validation (5MB max)
+- Only sends avatar if valid image file selected
+- Backend returns updated user data with avatar_url
+- Avatar shows immediately after upload
 
-**Test:**
-1. Go to Settings
-2. Upload a photo
-3. Click Save
-4. Avatar should appear immediately
-5. (Next: Add "Remove Photo" button in frontend)
+**Test After Deploy:**
+1. Go to Settings → Edit Profile
+2. Click on avatar placeholder
+3. Select an image file (JPEG/PNG)
+4. Fill in Name/Bio
+5. Click "Save Changes"
+6. Avatar should update immediately ✅
 
 ---
 
-### 2. Notifications Page
-**Status:** FIXED ✅  
+### 2. Notifications Page Crash ✅
+**Status:** FIXED  
 **What Changed:**
-- Fixed data structure to use `data.notifications`
-- Removed mock data causing confusion
-- Added proper error handling
+- Fixed "Objects are not valid as a React child" error
+- Now handles comment data correctly (string or object)
+- Proper error handling for empty state
+- Removed mock data
 
-**Test:**
-1. Bell icon should show count (if you have notifications)
-2. Click "See all" → should show notifications page
-3. Notifications should load (might be empty if none exist)
-
----
-
-## 🚧 NEEDS MORE INFO
-
-### 3. Upload Crash
-**Status:** INVESTIGATING 🔍  
-**What We Need:**
-1. Open browser console (F12)
-2. Try to upload a file
-3. Look for RED error messages
-4. Send screenshot or copy the error text
-
-**Possible causes:**
-- JavaScript error when referencing old variable
-- Form validation issue
-- File size too large
+**Test After Deploy:**
+1. Click bell icon (top right)
+2. Click "See all" link
+3. Notifications page should load ✅
+4. Should show your notifications (or "No notifications" if empty)
 
 ---
 
-### 4. Playlist Click Does Nothing
-**Status:** NOT YET FIXED ❌  
-**Reason:** PlaylistDetail.jsx page doesn't exist
+### 3. Playlist Detail Page ✅
+**Status:** FIXED  
+**What Changed:**
+- Created complete PlaylistDetail page
+- Shows all tracks in playlist
+- Play, share, and delete functionality
+- Remove tracks from playlist (for owners)
+- Beautiful UI with track numbers and duration
 
-**Fix Needed:**
-- Create PlaylistDetail page
-- Show tracks in playlist
-- Add/remove tracks from detail view
+**Test After Deploy:**
+1. Go to Library → Playlists tab
+2. Click on a playlist card
+3. Should open playlist detail page ✅
+4. See list of tracks
+5. Click play button to play tracks
+6. If it's your playlist, you can remove tracks
 
-**Workaround for now:**
-- You can add tracks to playlists from track detail pages
-- Just can't view playlist contents yet
+---
+
+### 4. Upload Crash (PENDING TESTING)
+**Status:** NOT REPRODUCED ⏳  
+**Note:** Please test after deploying these fixes. The console errors you sent were about avatar upload (now fixed) and notifications (now fixed), so the upload page might be working now!
+
+**To Test:**
+1. Go to Upload page
+2. Select 1 or multiple audio files
+3. Fill in title, description, category
+4. Click Upload
+5. Should work without crashing
+
+If it still crashes, send the new console errors!
 
 ---
 
@@ -73,23 +80,76 @@
 
 ---
 
-## 🚀 DEPLOY CURRENT FIXES
+## 🚀 DEPLOY ALL FIXES NOW
 
-Run on your server:
+**Run these commands on your server:**
 
 ```bash
+ssh root@185.250.36.33
 cd /root/islamic-soundcloud
+
+# Pull latest code
 git pull origin main
 
-# Backend changes (avatar delete, notifications)
+# Backend restart (avatar validation, profile update)
 docker compose restart app
 
-# Frontend changes
+# Rebuild frontend (notifications fix, playlist page, avatar UI)
 cd frontend
+npm install  # Just in case new dependencies
 npm run build
 cd ..
+
+# Restart frontend container
 docker compose restart frontend
+
+# Verify containers are running
+docker compose ps
+
+echo "✅ Deployment complete! Hard refresh browser (Ctrl+Shift+R)"
 ```
+
+**Expected result:** All containers should show status "Up"
+
+---
+
+## 📋 TESTING CHECKLIST (After Deploy)
+
+**Quick Tests:**
+
+### Avatar Upload
+- [ ] Go to Settings → Edit Profile
+- [ ] Click avatar, select JPG/PNG image
+- [ ] Click "Save Changes"
+- [ ] Avatar appears immediately
+- [ ] No errors in console
+
+### Notifications  
+- [ ] Click bell icon (should work)
+- [ ] Click "See all" link
+- [ ] Notifications page loads without crash
+- [ ] Can see notifications or "No notifications" message
+
+### Playlists
+- [ ] Go to Library → Playlists tab
+- [ ] Click on any playlist card
+- [ ] Playlist detail page opens
+- [ ] See tracks list
+- [ ] Play button works
+- [ ] Share button copies link
+- [ ] (If owner) Remove track button works
+
+### Upload (TEST THIS!)
+- [ ] Go to Upload page
+- [ ] Select 1 audio file
+- [ ] Fill in title, category
+- [ ] Click Upload
+- [ ] No crash, redirects to Library
+
+### Search
+- [ ] Already tested ✅
+- [ ] Fuzzy search working
+- [ ] People/Playlists filters working
 
 ---
 
