@@ -57,8 +57,11 @@ class TrackController extends Controller
 
     public function show(Track $track)
     {
+        // Only allow viewing approved tracks, unless user is admin or track owner
         if ($track->status !== 'approved') {
-            abort(404);
+            if (!auth()->check() || (auth()->id() !== $track->user_id && !auth()->user()->is_admin)) {
+                abort(404);
+            }
         }
 
         $track->load(['user.profile']);
