@@ -4,12 +4,16 @@ import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
 import { copyToClipboard } from '../utils/clipboard'
+import AddToPlaylistModal from '../components/AddToPlaylistModal'
 
 export default function Feed() {
   const [tracks, setTracks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+  const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null)
   const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
   const navigate = useNavigate()
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   useEffect(() => {
     fetchFeed()
@@ -81,6 +85,16 @@ export default function Feed() {
       console.error('Copy error:', error)
       toast.error('Failed to copy link. Please copy manually.')
     }
+  }
+
+  const handleAddToPlaylist = (trackId, e) => {
+    e.stopPropagation()
+    if (!user?.id) {
+      toast.error('Please login to add tracks to playlists')
+      return
+    }
+    setSelectedTrackForPlaylist(trackId)
+    setShowPlaylistModal(true)
   }
 
   if (loading) {
@@ -203,6 +217,13 @@ export default function Feed() {
                           <i className="fas fa-share"></i>
                           <span>Share</span>
                         </button>
+                        <button 
+                          className="feed-action-btn"
+                          onClick={(e) => handleAddToPlaylist(track.id, e)}
+                          title="Add to playlist"
+                        >
+                          <i className="fas fa-list-music"></i>
+                        </button>
 
                         <div className="feed-stats">
                           <span><i className="fas fa-play"></i> {track.plays_count || 0}</span>
@@ -259,6 +280,17 @@ export default function Feed() {
           </p>
         </div>
       </aside>
+
+      {/* Add to Playlist Modal */}
+      {showPlaylistModal && selectedTrackForPlaylist && (
+        <AddToPlaylistModal
+          trackId={selectedTrackForPlaylist}
+          onClose={() => {
+            setShowPlaylistModal(false)
+            setSelectedTrackForPlaylist(null)
+          }}
+        />
+      )}
     </div>
   )
 }

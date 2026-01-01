@@ -15,6 +15,7 @@ class Profile extends Model
         'display_name',
         'bio',
         'avatar_path',
+        'header_path',
     ];
 
     public function user(): BelongsTo
@@ -31,6 +32,16 @@ class Profile extends Model
         // Use Nginx proxy URL instead of direct MinIO URL
         // This ensures avatars work from the browser
         return config('app.url') . '/storage/' . $this->avatar_path;
+    }
+
+    public function getHeaderUrlAttribute(): ?string
+    {
+        if (!$this->header_path) {
+            return null;
+        }
+        
+        // Use Nginx proxy URL instead of direct MinIO URL
+        return config('app.url') . '/storage/' . $this->header_path;
     }
 }
 

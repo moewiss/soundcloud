@@ -347,6 +347,20 @@ export default function Upload() {
                 </div>
 
                 <div className="form-group">
+                  <label className="form-label">Tags</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    placeholder="Add tags separated by commas (e.g. nasheed, arabic, vocal)"
+                  />
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px' }}>
+                    Tags help listeners discover your track. Use commas to separate multiple tags.
+                  </p>
+                </div>
+
+                <div className="form-group">
                   <label className="form-label">Privacy</label>
                   <div style={{ display: 'flex', gap: '15px' }}>
                     {['public', 'private'].map(opt => (

@@ -4,11 +4,14 @@ import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
 import { copyToClipboard } from '../utils/clipboard'
+import AddToPlaylistModal from '../components/AddToPlaylistModal'
 
 export default function Home() {
   const [tracks, setTracks] = useState([])
   const [trendingTracks, setTrendingTracks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+  const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null)
   const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -116,6 +119,16 @@ export default function Home() {
       console.error('Copy error:', error)
       toast.error('Failed to copy link. Please copy manually.')
     }
+  }
+
+  const handleAddToPlaylist = (trackId, e) => {
+    e.stopPropagation()
+    if (!user?.id) {
+      toast.error('Please login to add tracks to playlists')
+      return
+    }
+    setSelectedTrackForPlaylist(trackId)
+    setShowPlaylistModal(true)
   }
 
   if (loading) {
@@ -408,6 +421,13 @@ export default function Home() {
                       >
                         <i className="fas fa-share"></i>
                       </button>
+                      <button 
+                        className="feed-action-btn"
+                        onClick={(e) => handleAddToPlaylist(track.id, e)}
+                        title="Add to playlist"
+                      >
+                        <i className="fas fa-list-music"></i>
+                      </button>
                       <div className="feed-stats">
                         <span><i className="fas fa-play"></i> {track.plays_count || 0}</span>
                         <span><i className="fas fa-comment"></i> {track.comments_count || 0}</span>
@@ -468,6 +488,17 @@ export default function Home() {
             <i className="fas fa-upload"></i> Upload Track
           </button>
         </div>
+      )}
+
+      {/* Add to Playlist Modal */}
+      {showPlaylistModal && selectedTrackForPlaylist && (
+        <AddToPlaylistModal
+          trackId={selectedTrackForPlaylist}
+          onClose={() => {
+            setShowPlaylistModal(false)
+            setSelectedTrackForPlaylist(null)
+          }}
+        />
       )}
     </div>
   )

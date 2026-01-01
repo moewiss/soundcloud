@@ -14,6 +14,7 @@ class ProfileController extends Controller
             'display_name' => 'sometimes|string|max:120',
             'bio' => 'sometimes|string|max:1000',
             'avatar' => 'sometimes|image|max:5120', // 5MB
+            'header' => 'sometimes|image|max:5120', // 5MB
         ]);
 
         $profile = $request->user()->profile;
@@ -26,6 +27,16 @@ class ProfileController extends Controller
 
             $path = $request->file('avatar')->store('avatars', 's3');
             $profile->avatar_path = $path;
+        }
+
+        if ($request->hasFile('header')) {
+            // Delete old header if exists
+            if ($profile->header_path) {
+                Storage::disk('s3')->delete($profile->header_path);
+            }
+
+            $path = $request->file('header')->store('headers', 's3');
+            $profile->header_path = $path;
         }
 
         if (isset($validated['display_name'])) {
@@ -49,6 +60,7 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'bio' => $profile->bio,
                 'avatar_url' => $profile->avatar_url,
+                'header_url' => $profile->header_url,
             ],
         ]);
     }
@@ -79,6 +91,7 @@ class ProfileController extends Controller
             'email' => $user->email,
             'bio' => $user->profile->bio ?? null,
             'avatar_url' => $user->profile->avatar_url ?? null,
+            'header_url' => $user->profile->header_url ?? null,
             'created_at' => $user->created_at,
             'tracks_count' => $user->tracks()->approved()->count(),
             'followers_count' => $user->followers()->count(),

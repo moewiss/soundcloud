@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
 import { copyToClipboard } from '../utils/clipboard'
+import AddToPlaylistModal from '../components/AddToPlaylistModal'
 
 export default function UserProfile() {
   const { id } = useParams()
@@ -19,6 +20,8 @@ export default function UserProfile() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [followChecked, setFollowChecked] = useState(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+  const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null)
   const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   const isLoggedIn = !!localStorage.getItem('token')
@@ -322,6 +325,49 @@ export default function UserProfile() {
     }
   }
 
+  const handleAddToPlaylist = (trackId, e) => {
+    e.stopPropagation()
+    if (!currentUser?.id) {
+      toast.error('Please login to add tracks to playlists')
+      return
+    }
+    setSelectedTrackForPlaylist(trackId)
+    setShowPlaylistModal(true)
+  }
+
+  const handleDeleteTrack = async (trackId, e) => {
+    e.stopPropagation()
+    
+    if (!currentUser?.id) {
+      toast.error('Please login to delete tracks')
+      return
+    }
+    
+    if (!confirm('Are you sure you want to delete this track? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      if (currentUser.is_admin) {
+        await api.adminDeleteTrack(trackId)
+      } else {
+        await api.deleteTrack(trackId)
+      }
+      toast.success('Track deleted successfully')
+      
+      // Remove track from local state
+      setTracks(prev => prev.filter(t => t.id !== trackId))
+      setLikedTracks(prev => prev.filter(t => t.id !== trackId))
+      setReposts(prev => prev.filter(t => t.id !== trackId))
+      
+      // Refresh user data to update counts
+      fetchUser()
+    } catch (error) {
+      console.error('Delete error:', error)
+      toast.error(error.response?.data?.message || 'Failed to delete track')
+    }
+  }
+
   // Render track card
   const renderTrackCard = (track) => (
     <div key={track.id} className="feed-card">
@@ -383,6 +429,23 @@ export default function UserProfile() {
             >
               <i className="fas fa-share"></i>
             </button>
+            <button 
+              className="feed-action-btn"
+              onClick={(e) => handleAddToPlaylist(track.id, e)}
+              title="Add to playlist"
+            >
+              <i className="fas fa-list-music"></i>
+            </button>
+            {(currentUser?.id === track.user_id || currentUser?.is_admin) && (
+              <button 
+                className="feed-action-btn"
+                onClick={(e) => handleDeleteTrack(track.id, e)}
+                title="Delete track"
+                style={{ color: 'var(--text-danger)' }}
+              >
+                <i className="fas fa-trash"></i>
+              </button>
+            )}
 
             <div className="feed-stats">
               <span><i className="fas fa-play"></i> {track.plays_count || 0}</span>
@@ -602,12 +665,24 @@ export default function UserProfile() {
     <div className="page" style={{ padding: 0 }}>
       {/* Profile Header */}
       <div style={{
-        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+        background: user.header_url 
+          ? `url(${user.header_url}) center/cover` 
+          : 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
         padding: '40px 30px',
         marginBottom: '30px',
-        color: 'white'
+        color: 'white',
+        position: 'relative',
+        minHeight: '300px'
       }}>
-        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', gap: '30px', alignItems: 'flex-end' }}>
+        {user.header_url && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 0
+          }}></div>
+        )}
+        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', gap: '30px', alignItems: 'flex-end', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '200px',
             height: '200px',
@@ -942,6 +1017,17 @@ export default function UserProfile() {
           </div>
         </div>
       </div>
+
+      {/* Add to Playlist Modal */}
+      {showPlaylistModal && selectedTrackForPlaylist && (
+        <AddToPlaylistModal
+          trackId={selectedTrackForPlaylist}
+          onClose={() => {
+            setShowPlaylistModal(false)
+            setSelectedTrackForPlaylist(null)
+          }}
+        />
+      )}
     </div>
   )
 }

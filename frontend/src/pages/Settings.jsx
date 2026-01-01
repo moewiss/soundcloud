@@ -6,10 +6,12 @@ import { api } from '../services/api'
 export default function Settings() {
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
+  const headerInputRef = useRef(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
   const [user, setUser] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
+  const [headerPreview, setHeaderPreview] = useState(null)
   
   const [profile, setProfile] = useState({
     name: '',
@@ -76,6 +78,26 @@ export default function Settings() {
     }
   }
 
+  const handleHeaderSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)')
+        e.target.value = '' // Clear the input
+        return
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB')
+        e.target.value = '' // Clear the input
+        return
+      }
+      setHeaderPreview(URL.createObjectURL(file))
+    }
+  }
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -95,6 +117,12 @@ export default function Settings() {
       const avatarFile = fileInputRef.current?.files?.[0]
       if (avatarFile && avatarFile.size > 0 && avatarFile.type.startsWith('image/')) {
         formData.append('avatar', avatarFile)
+      }
+
+      // Only append header if a valid file is selected
+      const headerFile = headerInputRef.current?.files?.[0]
+      if (headerFile && headerFile.size > 0 && headerFile.type.startsWith('image/')) {
+        formData.append('header', headerFile)
       }
 
       const response = await api.updateUser(formData)
@@ -243,6 +271,64 @@ export default function Settings() {
                         JPG, GIF or PNG. Max 2MB.
                       </p>
                     </div>
+                  </div>
+
+                  {/* Header Image */}
+                  <div style={{ marginBottom: '30px' }}>
+                    <label className="form-label" style={{ marginBottom: '12px', display: 'block' }}>
+                      Header Image
+                    </label>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        borderRadius: 'var(--radius-lg)',
+                        background: headerPreview 
+                          ? `url(${headerPreview}) center/cover` 
+                          : 'linear-gradient(135deg, var(--bg-secondary) 0%, var(--border-light) 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        border: '2px dashed var(--border-medium)',
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}
+                      onClick={() => headerInputRef.current?.click()}
+                    >
+                      {!headerPreview && (
+                        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                          <i className="fas fa-image" style={{ fontSize: '48px', marginBottom: '10px', display: 'block' }}></i>
+                          <p>Click to upload header image</p>
+                          <p style={{ fontSize: '12px' }}>Recommended: 2480×520 pixels, max 5MB</p>
+                        </div>
+                      )}
+                      {headerPreview && (
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(0,0,0,0.5)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: 0,
+                          transition: 'opacity 0.3s',
+                          color: 'white'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                        >
+                          <i className="fas fa-camera" style={{ fontSize: '30px' }}></i>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={headerInputRef}
+                      accept="image/*"
+                      onChange={handleHeaderSelect}
+                      style={{ display: 'none' }}
+                    />
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>

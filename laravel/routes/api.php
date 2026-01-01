@@ -120,6 +120,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::get('/tracks/pending', [AdminTrackController::class, 'pending']);
     Route::patch('/tracks/{track}/approve', [AdminTrackController::class, 'approve']);
     Route::patch('/tracks/{track}/reject', [AdminTrackController::class, 'reject']);
+    Route::delete('/tracks/{track}', [AdminTrackController::class, 'destroy']);
     Route::get('/stats', [AdminTrackController::class, 'stats']);
     Route::get('/users', [AdminTrackController::class, 'users']);
 });

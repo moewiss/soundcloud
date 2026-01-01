@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
+import AddToPlaylistModal from '../components/AddToPlaylistModal'
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -15,8 +16,11 @@ export default function Search() {
   const [loading, setLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [likedTracks, setLikedTracks] = useState(new Set())
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+  const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null)
   const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
   const navigate = useNavigate()
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   const filters = [
     { id: 'all', label: 'Everything', icon: 'fa-globe' },
@@ -172,6 +176,16 @@ export default function Search() {
     }
   }
 
+  const handleAddToPlaylist = (trackId, e) => {
+    e.stopPropagation()
+    if (!user?.id) {
+      toast.error('Please login to add tracks to playlists')
+      return
+    }
+    setSelectedTrackForPlaylist(trackId)
+    setShowPlaylistModal(true)
+  }
+
   const clearSearch = () => {
     setSearchQuery('')
     setSearchParams({})
@@ -316,6 +330,13 @@ export default function Search() {
                         >
                           <i className="fas fa-heart"></i> {track.likes_count || 0}
                         </button>
+                        <button 
+                          className="like-stat-btn"
+                          onClick={(e) => handleAddToPlaylist(track.id, e)}
+                          title="Add to playlist"
+                        >
+                          <i className="fas fa-list-music"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -376,6 +397,17 @@ export default function Search() {
             </div>
           )}
         </>
+      )}
+
+      {/* Add to Playlist Modal */}
+      {showPlaylistModal && selectedTrackForPlaylist && (
+        <AddToPlaylistModal
+          trackId={selectedTrackForPlaylist}
+          onClose={() => {
+            setShowPlaylistModal(false)
+            setSelectedTrackForPlaylist(null)
+          }}
+        />
       )}
     </div>
   )

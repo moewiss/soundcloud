@@ -367,6 +367,11 @@ export const api = {
   rejectTrack: async (trackId) => {
     const res = await axiosInstance.patch(`/admin/tracks/${trackId}/reject`)
     return res.data
+  },
+
+  adminDeleteTrack: async (trackId) => {
+    const res = await axiosInstance.delete(`/admin/tracks/${trackId}`)
+    return res.data
   }
 }
 

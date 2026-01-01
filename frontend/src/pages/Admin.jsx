@@ -79,6 +79,20 @@ export default function Admin() {
     }
   }
 
+  const handleDelete = async (trackId) => {
+    if (!confirm('Are you sure you want to delete this track? This action cannot be undone.')) return
+    
+    try {
+      await api.adminDeleteTrack(trackId)
+      toast.success('Track deleted successfully')
+      fetchTracks()
+      fetchStats()
+    } catch (error) {
+      console.error('Delete error:', error)
+      toast.error(error.response?.data?.message || 'Failed to delete track')
+    }
+  }
+
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -377,22 +391,56 @@ export default function Admin() {
                         >
                           <i className="fas fa-eye"></i> View Details
                         </button>
+                        <button 
+                          className="btn"
+                          onClick={() => handleDelete(track.id)}
+                          style={{
+                            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <i className="fas fa-trash"></i>
+                          Delete
+                        </button>
                       </div>
                     )}
 
                     {track.status !== 'pending' && (
-                      <button 
-                        className="btn"
-                        onClick={() => navigate(`/tracks/${track.id}`)}
-                        style={{
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          border: '1px solid var(--border-medium)',
-                          padding: '10px 20px'
-                        }}
-                      >
-                        <i className="fas fa-eye"></i> View Track
-                      </button>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <button 
+                          className="btn"
+                          onClick={() => navigate(`/tracks/${track.id}`)}
+                          style={{
+                            background: 'var(--bg-primary)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-medium)',
+                            padding: '10px 20px'
+                          }}
+                        >
+                          <i className="fas fa-eye"></i> View Track
+                        </button>
+                        <button 
+                          className="btn"
+                          onClick={() => handleDelete(track.id)}
+                          style={{
+                            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <i className="fas fa-trash"></i>
+                          Delete
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

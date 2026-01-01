@@ -193,6 +193,38 @@ export default function TrackDetail() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!user?.id) {
+      toast.error('Please login to delete tracks')
+      return
+    }
+    
+    const isOwner = track?.user?.id === user.id
+    const isAdmin = user.is_admin
+    
+    if (!isOwner && !isAdmin) {
+      toast.error('You do not have permission to delete this track')
+      return
+    }
+    
+    if (!confirm('Are you sure you want to delete this track? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      if (isAdmin) {
+        await api.adminDeleteTrack(id)
+      } else {
+        await api.deleteTrack(id)
+      }
+      toast.success('Track deleted successfully')
+      navigate('/') // Redirect to home after deletion
+    } catch (error) {
+      console.error('Delete error:', error)
+      toast.error(error.response?.data?.message || 'Failed to delete track')
+    }
+  }
+
   const formatTime = (sec) => {
     if (!sec) return '0:00'
     const m = Math.floor(sec / 60)
@@ -391,6 +423,16 @@ export default function TrackDetail() {
             >
               <i className="fas fa-share"></i> Share
             </button>
+
+            {(user?.id === track.user?.id || user?.is_admin) && (
+              <button
+                className="feed-action-btn"
+                onClick={handleDelete}
+                style={{ color: 'var(--text-danger)' }}
+              >
+                <i className="fas fa-trash"></i> Delete
+              </button>
+            )}
 
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '20px', color: 'var(--text-muted)', fontSize: '13px', alignItems: 'center' }}>
               <span><i className="fas fa-play"></i> {track.plays_count || 0}</span>

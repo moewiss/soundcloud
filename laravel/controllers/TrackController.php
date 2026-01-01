@@ -102,6 +102,7 @@ class TrackController extends Controller
             'cover' => 'nullable|image|max:5120', // 5MB
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
+            'category' => 'nullable|string|max:100',
         ]);
 
         // Upload source file
@@ -120,6 +121,7 @@ class TrackController extends Controller
             'source_path' => $sourcePath,
             'cover_path' => $coverPath,
             'tags' => $validated['tags'] ?? null,
+            'category' => $validated['category'] ?? null,
             'status' => 'approved', // Auto-approve tracks
         ]);
 
