@@ -338,17 +338,49 @@ export const api = {
     return res.data
   },
 
-  // Admin
+  // Admin - User Management
+  getAdminUsers: async (params) => {
+    const res = await axiosInstance.get('/admin/users', { params })
+    return res.data
+  },
+  
+  updateAdminUser: async (userId, data) => {
+    const res = await axiosInstance.put(`/admin/users/${userId}`, data)
+    return res.data
+  },
+  
+  deleteAdminUser: async (userId) => {
+    const res = await axiosInstance.delete(`/admin/users/${userId}`)
+    return res.data
+  },
+  
+  banUser: async (userId) => {
+    const res = await axiosInstance.post(`/admin/users/${userId}/ban`)
+    return res.data
+  },
+  
+  resetUserPassword: async (userId, data) => {
+    const res = await axiosInstance.post(`/admin/users/${userId}/reset-password`, data)
+    return res.data
+  },
+  
+  generateResetLink: async (userId) => {
+    const res = await axiosInstance.post(`/admin/users/${userId}/reset-link`)
+    return res.data
+  },
+  
+  // Admin - Statistics & Activity
   getAdminStats: async () => {
     const res = await axiosInstance.get('/admin/stats')
     return res.data
   },
   
-  getAdminUsers: async () => {
-    const res = await axiosInstance.get('/admin/users')
+  getAdminActivity: async () => {
+    const res = await axiosInstance.get('/admin/activity')
     return res.data
   },
   
+  // Admin - Track Management
   getAdminTracks: async () => {
     const res = await axiosInstance.get('/admin/tracks')
     return res.data
@@ -371,6 +403,17 @@ export const api = {
 
   adminDeleteTrack: async (trackId) => {
     const res = await axiosInstance.delete(`/admin/tracks/${trackId}`)
+    return res.data
+  },
+  
+  // Admin - Content Moderation
+  getAdminComments: async (params) => {
+    const res = await axiosInstance.get('/admin/comments', { params })
+    return res.data
+  },
+  
+  deleteAdminComment: async (commentId) => {
+    const res = await axiosInstance.delete(`/admin/comments/${commentId}`)
     return res.data
   }
 }

@@ -115,12 +115,27 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Admin routes
-Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(function () {
+    // Track Management
     Route::get('/tracks', [AdminTrackController::class, 'index']);
     Route::get('/tracks/pending', [AdminTrackController::class, 'pending']);
     Route::patch('/tracks/{track}/approve', [AdminTrackController::class, 'approve']);
     Route::patch('/tracks/{track}/reject', [AdminTrackController::class, 'reject']);
     Route::delete('/tracks/{track}', [AdminTrackController::class, 'destroy']);
-    Route::get('/stats', [AdminTrackController::class, 'stats']);
-    Route::get('/users', [AdminTrackController::class, 'users']);
+    
+    // User Management
+    Route::get('/users', [\App\Http\Controllers\Api\AdminController::class, 'getUsers']);
+    Route::put('/users/{id}', [\App\Http\Controllers\Api\AdminController::class, 'updateUser']);
+    Route::delete('/users/{id}', [\App\Http\Controllers\Api\AdminController::class, 'deleteUser']);
+    Route::post('/users/{id}/ban', [\App\Http\Controllers\Api\AdminController::class, 'banUser']);
+    Route::post('/users/{id}/reset-password', [\App\Http\Controllers\Api\AdminController::class, 'resetUserPassword']);
+    Route::post('/users/{id}/reset-link', [\App\Http\Controllers\Api\AdminController::class, 'generateResetLink']);
+    
+    // Statistics & Activity
+    Route::get('/stats', [\App\Http\Controllers\Api\AdminController::class, 'getStats']);
+    Route::get('/activity', [\App\Http\Controllers\Api\AdminController::class, 'getActivity']);
+    
+    // Content Moderation
+    Route::get('/comments', [\App\Http\Controllers\Api\AdminController::class, 'getComments']);
+    Route::delete('/comments/{id}', [\App\Http\Controllers\Api\AdminController::class, 'deleteComment']);
 });

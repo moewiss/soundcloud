@@ -22,6 +22,7 @@ import Register from "./pages/Register"
 import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
 import Admin from "./pages/Admin"
+import AdminPanel from "./pages/AdminPanel"
 
 function Header() {
   const navigate = useNavigate()
@@ -615,7 +616,8 @@ function AppContent() {
           <Route path="/playlists/:id" element={<PlaylistDetail />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/admin/old" element={<Admin />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
