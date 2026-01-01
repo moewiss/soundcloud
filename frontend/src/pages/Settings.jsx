@@ -135,6 +135,10 @@ export default function Settings() {
         if (response.user.avatar_url) {
           setAvatarPreview(response.user.avatar_url)
         }
+        // Update header preview if new header was uploaded
+        if (response.user.header_url) {
+          setHeaderPreview(response.user.header_url)
+        }
       }
       
       toast.success('Profile updated successfully!')

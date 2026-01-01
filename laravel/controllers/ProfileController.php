@@ -56,7 +56,7 @@ class ProfileController extends Controller
             'profile' => $profile,
             'user' => [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => $profile->display_name ?? $user->name,  // Use display_name if set
                 'email' => $user->email,
                 'bio' => $profile->bio,
                 'avatar_url' => $profile->avatar_url,
