@@ -13,18 +13,16 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
-    public function __construct()
+    private function checkAdmin()
     {
-        $this->middleware(function ($request, $next) {
-            if (!auth()->user() || !auth()->user()->is_admin) {
-                abort(403, 'Unauthorized action.');
-            }
-            return $next($request);
-        });
+        if (!auth()->user() || !auth()->user()->is_admin) {
+            abort(403, 'Unauthorized action.');
+        }
     }
 
     public function getStats()
     {
+        $this->checkAdmin();
         $stats = [
             'total_users' => User::count(),
             'total_tracks' => Track::count(),
@@ -37,6 +35,7 @@ class AdminController extends Controller
 
     public function getActivity()
     {
+        $this->checkAdmin();
         $recentTracks = Track::with('user')
             ->orderBy('created_at', 'desc')
             ->take(10)
@@ -72,6 +71,7 @@ class AdminController extends Controller
 
     public function getUsers()
     {
+        $this->checkAdmin();
         $users = User::withCount(['tracks', 'likes', 'followers', 'following'])
             ->orderBy('created_at', 'desc')
             ->get()
@@ -95,6 +95,7 @@ class AdminController extends Controller
 
     public function updateUser(Request $request, $id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
 
         $request->validate([
@@ -125,6 +126,7 @@ class AdminController extends Controller
 
     public function deleteUser($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
 
         if ($user->id === auth()->id()) {
@@ -138,6 +140,7 @@ class AdminController extends Controller
 
     public function toggleBanUser($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
 
         if ($user->id === auth()->id()) {
@@ -162,6 +165,7 @@ class AdminController extends Controller
 
     public function resetUserPassword(Request $request, $id)
     {
+        $this->checkAdmin();
         $request->validate([
             'password' => 'required|string|min:8',
         ]);
@@ -175,6 +179,7 @@ class AdminController extends Controller
 
     public function generateUserResetLink($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
 
         // Generate a password reset token
@@ -199,6 +204,7 @@ class AdminController extends Controller
 
     public function getComments()
     {
+        $this->checkAdmin();
         $comments = Comment::with(['user', 'track'])
             ->orderBy('created_at', 'desc')
             ->get()
@@ -223,6 +229,7 @@ class AdminController extends Controller
 
     public function deleteComment($id)
     {
+        $this->checkAdmin();
         $comment = Comment::findOrFail($id);
         $comment->delete();
 
