@@ -9,7 +9,6 @@ laravel/vendor/
 laravel/node_modules/
 laravel/storage/
 laravel/bootstrap/cache/
-app/
 storage-logs/
 
 # Frontend
