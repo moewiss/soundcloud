@@ -14,21 +14,26 @@ echo "2. Pulling latest changes from GitHub..."
 git pull origin main
 
 echo ""
-echo "3. Copying frontend build to proxy container..."
-docker cp frontend/dist/. islamic-soundcloud-proxy-1:/var/www/frontend/
+echo "3. Finding proxy container name..."
+PROXY_CONTAINER=$(docker compose ps -q proxy)
+echo "Proxy container: $PROXY_CONTAINER"
 
 echo ""
-echo "4. Running password_resets table migration..."
+echo "4. Copying frontend build to proxy container..."
+docker cp frontend/dist/. $PROXY_CONTAINER:/var/www/frontend/
+
+echo ""
+echo "5. Running password_resets table migration..."
 docker compose exec -T app php artisan migrate --force
 
 echo ""
-echo "5. Clearing Laravel cache..."
+echo "6. Clearing Laravel cache..."
 docker compose exec -T app php artisan cache:clear
 docker compose exec -T app php artisan config:clear
 docker compose exec -T app php artisan route:clear
 
 echo ""
-echo "6. Restarting containers..."
+echo "7. Restarting containers..."
 docker compose restart app proxy
 
 echo ""
