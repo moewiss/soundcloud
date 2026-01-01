@@ -130,10 +130,11 @@ class AuthController extends Controller
 
         // In a real application, you would send an email here
         // For now, we'll return the token (ONLY for development/testing)
+        $frontendUrl = env('FRONTEND_URL', 'http://185.250.36.33:5173');
         return response()->json([
             'message' => 'Password reset link sent to your email.',
             'reset_token' => $token, // Remove this in production!
-            'reset_url' => config('app.frontend_url') . '/reset-password?token=' . $token . '&email=' . $request->email,
+            'reset_url' => $frontendUrl . '/reset-password?token=' . $token . '&email=' . $request->email,
         ]);
     }
 
