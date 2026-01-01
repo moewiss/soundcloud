@@ -115,7 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Admin routes
-Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Track Management
     Route::get('/tracks', [AdminTrackController::class, 'index']);
     Route::get('/tracks/pending', [AdminTrackController::class, 'pending']);

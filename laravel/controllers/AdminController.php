@@ -14,6 +14,16 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!auth()->user() || !auth()->user()->is_admin) {
+                return response()->json(['message' => 'Unauthorized. Admin access required.'], 403);
+            }
+            return $next($request);
+        });
+    }
+    
     // User Management
     public function getUsers(Request $request)
     {
