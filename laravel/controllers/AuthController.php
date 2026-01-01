@@ -44,14 +44,37 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        // #region agent log
+        @file_put_contents('d:\Desktop\soundcloud\.cursor\debug.log', json_encode(['location'=>'AuthController.php:47','message'=>'Login request received','data'=>['email'=>$request->input('email'),'passwordLength'=>strlen($request->input('password','')),'allInputKeys'=>array_keys($request->all()),'contentType'=>$request->header('Content-Type')],'timestamp'=>round(microtime(true)*1000),'sessionId'=>'debug-session','hypothesisId'=>'H3,H4']) . "\n", FILE_APPEND);
+        // #endregion
+        
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+            ]);
+            
+            // #region agent log
+            @file_put_contents('d:\Desktop\soundcloud\.cursor\debug.log', json_encode(['location'=>'AuthController.php:51','message'=>'Validation passed','data'=>['email'=>$request->email],'timestamp'=>round(microtime(true)*1000),'sessionId'=>'debug-session','hypothesisId'=>'H1,H4']) . "\n", FILE_APPEND);
+            // #endregion
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // #region agent log
+            @file_put_contents('d:\Desktop\soundcloud\.cursor\debug.log', json_encode(['location'=>'AuthController.php:52','message'=>'Validation failed','data'=>['errors'=>$e->errors(),'status'=>$e->status],'timestamp'=>round(microtime(true)*1000),'sessionId'=>'debug-session','hypothesisId'=>'H1,H4']) . "\n", FILE_APPEND);
+            // #endregion
+            throw $e;
+        }
 
         $user = User::where('email', $request->email)->first();
+        
+        // #region agent log
+        @file_put_contents('d:\Desktop\soundcloud\.cursor\debug.log', json_encode(['location'=>'AuthController.php:56','message'=>'User lookup result','data'=>['userExists'=>!!$user,'email'=>$request->email],'timestamp'=>round(microtime(true)*1000),'sessionId'=>'debug-session','hypothesisId'=>'H5']) . "\n", FILE_APPEND);
+        // #endregion
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            // #region agent log
+            @file_put_contents('d:\Desktop\soundcloud\.cursor\debug.log', json_encode(['location'=>'AuthController.php:59','message'=>'Auth failed','data'=>['userExists'=>!!$user,'passwordCheckFailed'=>$user ? !Hash::check($request->password, $user->password) : null],'timestamp'=>round(microtime(true)*1000),'sessionId'=>'debug-session','hypothesisId'=>'H5']) . "\n", FILE_APPEND);
+            // #endregion
+            
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);

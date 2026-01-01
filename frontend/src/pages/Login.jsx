@@ -13,8 +13,17 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/b0b46084-7934-4818-98a5-24948a8c68b4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Login.jsx:16',message:'Login attempt started',data:{email:formData.email,passwordLength:formData.password?.length,formDataKeys:Object.keys(formData)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2,H3'})}).catch(()=>{});
+    // #endregion
+    
     try {
       const response = await api.login(formData)
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/b0b46084-7934-4818-98a5-24948a8c68b4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Login.jsx:20',message:'Login successful',data:{hasToken:!!response.token,hasUser:!!response.user},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2,H3'})}).catch(()=>{});
+      // #endregion
+      
       localStorage.setItem('token', response.token)
       localStorage.setItem('user', JSON.stringify(response.user))
       toast.success('Welcome back! 🎉')
@@ -24,6 +33,10 @@ export default function Login() {
       localStorage.removeItem('redirectAfterLogin')
       window.location.href = redirectTo
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/b0b46084-7934-4818-98a5-24948a8c68b4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Login.jsx:28',message:'Login failed',data:{status:error.response?.status,errorData:error.response?.data,errorMessage:error.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2,H3,H4'})}).catch(()=>{});
+      // #endregion
+      
       toast.error(error.response?.data?.message || 'Login failed')
     } finally {
       setLoading(false)
