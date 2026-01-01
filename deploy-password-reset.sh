@@ -10,22 +10,22 @@ echo "1. Pulling latest changes from GitHub..."
 git pull origin main
 
 echo ""
-echo "2. Running password_resets table migration..."
+echo "2. Copying frontend build to proxy container..."
+docker cp frontend/dist/. islamic-soundcloud-proxy-1:/var/www/frontend/
+
+echo ""
+echo "3. Running password_resets table migration..."
 docker compose exec -T app php artisan migrate --force
 
 echo ""
-echo "3. Clearing Laravel cache..."
+echo "4. Clearing Laravel cache..."
 docker compose exec -T app php artisan cache:clear
 docker compose exec -T app php artisan config:clear
 docker compose exec -T app php artisan route:clear
 
 echo ""
-echo "4. Verifying password_resets table exists..."
-docker compose exec -T app php artisan db:show
-
-echo ""
-echo "5. Restarting app container..."
-docker compose restart app
+echo "5. Restarting containers..."
+docker compose restart app proxy
 
 echo ""
 echo "=== DEPLOYMENT COMPLETE ==="
