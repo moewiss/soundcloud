@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Track;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -75,6 +76,56 @@ class AdminController extends Controller
             ->values();
 
         return response()->json($activity);
+    }
+
+    public function getUsers(Request $request)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $query = User::with('profile');
+
+        // Search
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter
+        if ($request->filter && $request->filter !== 'all') {
+            if ($request->filter === 'admin') {
+                $query->where('is_admin', true);
+            } elseif ($request->filter === 'banned') {
+                $query->where('is_banned', true);
+            }
+        }
+
+        $users = $query->withCount(['tracks', 'likedTracks', 'followers', 'following'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json($users);
+    }
+
+    public function getComments(Request $request)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $query = Comment::with(['user', 'track']);
+
+        // Search
+        if ($request->search) {
+            $query->where('content', 'like', "%{$request->search}%");
+        }
+
+        $comments = $query->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json($comments);
     }
 }
 
