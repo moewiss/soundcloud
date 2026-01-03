@@ -26,7 +26,7 @@ class AdminController extends Controller
         $stats = [
             'total_users' => User::count(),
             'total_tracks' => Track::count(),
-            'pending_tracks' => Track::where('approved', false)->count(),
+            'pending_tracks' => Track::where('status', 'pending')->count(),
             'total_plays' => Track::sum('play_count'),
         ];
 
