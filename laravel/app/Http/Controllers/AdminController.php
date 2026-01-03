@@ -15,22 +15,59 @@ class AdminController extends Controller
 {
     private function checkAdmin()
     {
+        // #region agent log
+        $user = auth()->user(); file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:18','message'=>'checkAdmin called','data'=>['has_user'=>!is_null($user),'is_admin'=>$user?$user->is_admin:null],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'D-E']) . "\n", FILE_APPEND);
+        // #endregion
         if (!auth()->user() || !auth()->user()->is_admin) {
             abort(403, 'Unauthorized action.');
         }
+        // #region agent log
+        file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:21','message'=>'checkAdmin passed','data'=>['user_id'=>auth()->id()],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'D-E']) . "\n", FILE_APPEND);
+        // #endregion
     }
 
     public function getStats()
     {
-        $this->checkAdmin();
-        $stats = [
-            'total_users' => User::count(),
-            'total_tracks' => Track::count(),
-            'pending_tracks' => Track::where('status', 'pending')->count(),
-            'total_plays' => Track::sum('play_count'),
-        ];
-
-        return response()->json($stats);
+        // #region agent log
+        file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:26','message'=>'getStats called','data'=>[],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'A']) . "\n", FILE_APPEND);
+        // #endregion
+        try {
+            $this->checkAdmin();
+            // #region agent log
+            file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:32','message'=>'About to query total_users','data'=>[],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B']) . "\n", FILE_APPEND);
+            // #endregion
+            $total_users = User::count();
+            // #region agent log
+            file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:36','message'=>'total_users result','data'=>['count'=>$total_users],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B']) . "\n", FILE_APPEND);
+            // #endregion
+            $total_tracks = Track::count();
+            // #region agent log
+            file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:40','message'=>'total_tracks result','data'=>['count'=>$total_tracks],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B']) . "\n", FILE_APPEND);
+            // #endregion
+            $pending_tracks = Track::where('status', 'pending')->count();
+            // #region agent log
+            file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:44','message'=>'pending_tracks result','data'=>['count'=>$pending_tracks],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B']) . "\n", FILE_APPEND);
+            // #endregion
+            $total_plays = Track::sum('play_count');
+            // #region agent log
+            file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:48','message'=>'total_plays result','data'=>['sum'=>$total_plays],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B']) . "\n", FILE_APPEND);
+            // #endregion
+            $stats = [
+                'total_users' => $total_users,
+                'total_tracks' => $total_tracks,
+                'pending_tracks' => $pending_tracks,
+                'total_plays' => $total_plays,
+            ];
+            // #region agent log
+            file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:57','message'=>'getStats success','data'=>$stats,'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'A-B']) . "\n", FILE_APPEND);
+            // #endregion
+            return response()->json($stats);
+        } catch (\Exception $e) {
+            // #region agent log
+            file_put_contents('d:\\Desktop\\soundcloud\\.cursor\\debug.log', json_encode(['location'=>'AdminController.php:62','message'=>'getStats exception','data'=>['error'=>$e->getMessage(),'file'=>$e->getFile(),'line'=>$e->getLine()],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'A-B-C-D-E']) . "\n", FILE_APPEND);
+            // #endregion
+            throw $e;
+        }
     }
 
     public function getActivity()
