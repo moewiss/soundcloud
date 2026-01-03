@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -72,7 +72,7 @@ class AdminController extends Controller
     public function getUsers()
     {
         $this->checkAdmin();
-        $users = User::withCount(['tracks', 'likes', 'followers', 'following'])
+        $users = User::withCount(['tracks', 'likedTracks', 'followers', 'following'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($user) {
@@ -83,7 +83,7 @@ class AdminController extends Controller
                     'is_admin' => $user->is_admin,
                     'is_banned' => !is_null($user->banned_at),
                     'tracks_count' => $user->tracks_count,
-                    'likes_count' => $user->likes_count,
+                    'liked_tracks_count' => $user->liked_tracks_count,
                     'followers_count' => $user->followers_count,
                     'following_count' => $user->following_count,
                     'created_at' => $user->created_at->toIso8601String(),
@@ -138,7 +138,7 @@ class AdminController extends Controller
         return response()->json(['message' => 'User deleted successfully']);
     }
 
-    public function toggleBanUser($id)
+    public function banUser($id)
     {
         $this->checkAdmin();
         $user = User::findOrFail($id);
@@ -177,7 +177,7 @@ class AdminController extends Controller
         return response()->json(['message' => 'Password reset successfully']);
     }
 
-    public function generateUserResetLink($id)
+    public function generateResetLink($id)
     {
         $this->checkAdmin();
         $user = User::findOrFail($id);
