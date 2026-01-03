@@ -359,6 +359,11 @@ export const api = {
     return res.data
   },
   
+  restoreUser: async (userId) => {
+    const res = await axiosInstance.post(`/admin/users/${userId}/restore`)
+    return res.data
+  },
+  
   resetUserPassword: async (userId, data) => {
     const res = await axiosInstance.post(`/admin/users/${userId}/reset-password`, data)
     return res.data

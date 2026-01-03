@@ -85,12 +85,7 @@ class AdminController extends Controller
         $authCheck = $this->checkAdmin();
         if ($authCheck) return $authCheck;
 
-        $query = User::with('profile');
-
-        // Include soft deleted users if requested
-        if ($request->include_deleted) {
-            $query->withTrashed();
-        }
+        $query = User::with('profile')->withTrashed();
 
         // Search
         if ($request->search) {
@@ -105,14 +100,22 @@ class AdminController extends Controller
         if ($request->filter && $request->filter !== 'all') {
             if ($request->filter === 'admin') {
                 $query->where('is_admin', true);
-            } elseif ($request->filter === 'deleted') {
-                $query->onlyTrashed();
+            } elseif ($request->filter === 'active') {
+                $query->whereNull('deleted_at');
+            } elseif ($request->filter === 'banned') {
+                $query->whereNotNull('deleted_at');
             }
         }
 
         $users = $query->withCount(['tracks', 'likedTracks', 'followers', 'following'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
+
+        // Add is_banned flag for frontend
+        $users->getCollection()->transform(function ($user) {
+            $user->is_banned = $user->trashed();
+            return $user;
+        });
 
         return response()->json($users);
     }

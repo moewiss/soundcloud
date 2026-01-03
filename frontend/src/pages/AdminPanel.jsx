@@ -96,6 +96,17 @@ export default function AdminPanel() {
     }
   }
 
+  const handleRestoreUser = async (userId) => {
+    if (!confirm('Restore this user account?')) return
+    try {
+      await api.restoreUser(userId)
+      toast.success('User restored successfully')
+      loadUsers()
+    } catch (error) {
+      toast.error('Failed to restore user')
+    }
+  }
+
   const handleDeleteUser = async (userId) => {
     if (!confirm('This will delete the user and all their content. Continue?')) return
     try {
@@ -443,54 +454,76 @@ export default function AdminPanel() {
                       </td>
                       <td style={{ padding: '16px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={() => {
-                              setSelectedUser(usr)
-                              setShowPasswordModal(true)
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              background: 'var(--bg-primary)',
-                              border: '1px solid var(--border-medium)',
-                              borderRadius: '6px',
-                              color: 'var(--text-primary)',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                            title="Reset Password"
-                          >
-                            <i className="fas fa-key"></i>
-                          </button>
-                          <button
-                            onClick={() => handleBanUser(usr.id)}
-                            style={{
-                              padding: '6px 12px',
-                              background: usr.is_banned ? 'var(--bg-primary)' : 'rgba(239, 68, 68, 0.1)',
-                              border: '1px solid var(--border-medium)',
-                              borderRadius: '6px',
-                              color: usr.is_banned ? 'var(--text-primary)' : '#ef4444',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                            title={usr.is_banned ? 'Unban' : 'Ban'}
-                          >
-                            <i className={`fas fa-${usr.is_banned ? 'check' : 'ban'}`}></i>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(usr.id)}
-                            style={{
-                              padding: '6px 12px',
-                              background: 'rgba(239, 68, 68, 0.1)',
-                              border: '1px solid #ef4444',
-                              borderRadius: '6px',
-                              color: '#ef4444',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                            title="Delete User"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {!usr.is_banned && (
+                            <button
+                              onClick={() => {
+                                setSelectedUser(usr)
+                                setShowPasswordModal(true)
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                background: 'var(--bg-primary)',
+                                border: '1px solid var(--border-medium)',
+                                borderRadius: '6px',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                              title="Reset Password"
+                            >
+                              <i className="fas fa-key"></i>
+                            </button>
+                          )}
+                          {usr.is_banned ? (
+                            <button
+                              onClick={() => handleRestoreUser(usr.id)}
+                              style={{
+                                padding: '6px 12px',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid #10b981',
+                                borderRadius: '6px',
+                                color: '#10b981',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                              title="Restore User"
+                            >
+                              <i className="fas fa-undo"></i>
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleBanUser(usr.id)}
+                                style={{
+                                  padding: '6px 12px',
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid var(--border-medium)',
+                                  borderRadius: '6px',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                                title="Ban User"
+                              >
+                                <i className="fas fa-ban"></i>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(usr.id)}
+                                style={{
+                                  padding: '6px 12px',
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid #ef4444',
+                                  borderRadius: '6px',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                                title="Delete User"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
