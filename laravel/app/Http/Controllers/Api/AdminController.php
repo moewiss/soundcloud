@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\Track;
 use App\Models\Comment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -126,6 +128,113 @@ class AdminController extends Controller
             ->paginate(20);
 
         return response()->json($comments);
+    }
+
+    public function banUser($id)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $user = User::findOrFail($id);
+        
+        // Don't allow banning yourself
+        if ($user->id === auth()->id()) {
+            return response()->json(['error' => 'Cannot ban yourself'], 400);
+        }
+
+        $user->is_banned = !$user->is_banned;
+        $user->save();
+
+        return response()->json([
+            'message' => $user->is_banned ? 'User banned successfully' : 'User unbanned successfully',
+            'user' => $user
+        ]);
+    }
+
+    public function deleteUser($id)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $user = User::findOrFail($id);
+        
+        // Don't allow deleting yourself
+        if ($user->id === auth()->id()) {
+            return response()->json(['error' => 'Cannot delete yourself'], 400);
+        }
+
+        $user->delete();
+
+        return response()->json(['message' => 'User deleted successfully']);
+    }
+
+    public function updateUser($id, Request $request)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $user = User::findOrFail($id);
+        
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $id,
+            'is_admin' => 'sometimes|boolean',
+        ]);
+
+        $user->update($request->only(['name', 'email', 'is_admin']));
+
+        return response()->json([
+            'message' => 'User updated successfully',
+            'user' => $user
+        ]);
+    }
+
+    public function resetUserPassword($id, Request $request)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $user = User::findOrFail($id);
+        
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return response()->json(['message' => 'Password reset successfully']);
+    }
+
+    public function generateResetLink($id)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $user = User::findOrFail($id);
+        
+        // Generate a temporary token (you can implement proper password reset tokens)
+        $token = Str::random(60);
+        
+        // In a real app, you'd save this token to password_resets table
+        // For now, just return a link
+        $resetLink = url("/reset-password?token={$token}&email={$user->email}");
+
+        return response()->json([
+            'message' => 'Reset link generated',
+            'link' => $resetLink
+        ]);
+    }
+
+    public function deleteComment($id)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $comment = Comment::findOrFail($id);
+        $comment->delete();
+
+        return response()->json(['message' => 'Comment deleted successfully']);
     }
 }
 
