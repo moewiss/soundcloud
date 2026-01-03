@@ -87,6 +87,11 @@ class AdminController extends Controller
 
         $query = User::with('profile');
 
+        // Include soft deleted users if requested
+        if ($request->include_deleted) {
+            $query->withTrashed();
+        }
+
         // Search
         if ($request->search) {
             $search = $request->search;
@@ -100,8 +105,8 @@ class AdminController extends Controller
         if ($request->filter && $request->filter !== 'all') {
             if ($request->filter === 'admin') {
                 $query->where('is_admin', true);
-            } elseif ($request->filter === 'banned') {
-                $query->where('is_banned', true);
+            } elseif ($request->filter === 'deleted') {
+                $query->onlyTrashed();
             }
         }
 
@@ -135,19 +140,28 @@ class AdminController extends Controller
         $authCheck = $this->checkAdmin();
         if ($authCheck) return $authCheck;
 
-        $user = User::findOrFail($id);
+        $user = User::withTrashed()->findOrFail($id);
         
         // Don't allow banning yourself
         if ($user->id === auth()->id()) {
             return response()->json(['error' => 'Cannot ban yourself'], 400);
         }
 
-        $user->is_banned = !$user->is_banned;
-        $user->save();
+        // Toggle ban status using soft delete
+        if ($user->trashed()) {
+            $user->restore();
+            $message = 'User unbanned successfully';
+        } else {
+            $user->delete();
+            $message = 'User banned successfully';
+        }
+
+        // Reload user to get updated status
+        $user = User::withTrashed()->find($id);
 
         return response()->json([
-            'message' => $user->is_banned ? 'User banned successfully' : 'User unbanned successfully',
-            'user' => $user
+            'message' => $message,
+            'banned' => $user->trashed()
         ]);
     }
 
@@ -156,16 +170,30 @@ class AdminController extends Controller
         $authCheck = $this->checkAdmin();
         if ($authCheck) return $authCheck;
 
-        $user = User::findOrFail($id);
+        $user = User::withTrashed()->findOrFail($id);
         
         // Don't allow deleting yourself
         if ($user->id === auth()->id()) {
             return response()->json(['error' => 'Cannot delete yourself'], 400);
         }
 
-        $user->delete();
+        // Soft delete (can be restored)
+        if (!$user->trashed()) {
+            $user->delete();
+        }
 
-        return response()->json(['message' => 'User deleted successfully']);
+        return response()->json(['message' => 'User deleted successfully (can be restored)']);
+    }
+
+    public function restoreUser($id)
+    {
+        $authCheck = $this->checkAdmin();
+        if ($authCheck) return $authCheck;
+
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->restore();
+
+        return response()->json(['message' => 'User restored successfully']);
     }
 
     public function updateUser($id, Request $request)
@@ -213,16 +241,17 @@ class AdminController extends Controller
 
         $user = User::findOrFail($id);
         
-        // Generate a temporary token (you can implement proper password reset tokens)
+        // Generate a temporary token
         $token = Str::random(60);
         
-        // In a real app, you'd save this token to password_resets table
-        // For now, just return a link
-        $resetLink = url("/reset-password?token={$token}&email={$user->email}");
+        // Generate the reset link
+        $resetLink = config('app.url') . "/reset-password?token={$token}&email=" . urlencode($user->email);
 
         return response()->json([
-            'message' => 'Reset link generated',
-            'link' => $resetLink
+            'success' => true,
+            'message' => 'Reset link generated successfully',
+            'reset_link' => $resetLink,
+            'link' => $resetLink  // Include both for compatibility
         ]);
     }
 
