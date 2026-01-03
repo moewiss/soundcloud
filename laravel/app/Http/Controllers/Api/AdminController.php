@@ -44,9 +44,13 @@ class AdminController extends Controller
             ->get()
             ->map(function ($track) {
                 return [
-                    'type' => 'track',
-                    'user' => $track->user->name ?? 'Unknown',
-                    'title' => $track->title,
+                    'type' => 'track_upload',
+                    'user' => [
+                        'name' => $track->user->name ?? 'Unknown',
+                    ],
+                    'track' => [
+                        'title' => $track->title,
+                    ],
                     'created_at' => $track->created_at->toIso8601String(),
                 ];
             });
@@ -57,9 +61,10 @@ class AdminController extends Controller
             ->get()
             ->map(function ($user) {
                 return [
-                    'type' => 'user',
-                    'name' => $user->name,
-                    'email' => $user->email,
+                    'type' => 'user_registration',
+                    'user' => [
+                        'name' => $user->name,
+                    ],
                     'created_at' => $user->created_at->toIso8601String(),
                 ];
             });
