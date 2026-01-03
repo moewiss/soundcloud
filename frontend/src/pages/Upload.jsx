@@ -63,7 +63,30 @@ export default function Upload() {
   }
 
   const processAudioFiles = (files) => {
-    const audioFilesArray = files.filter(f => f.type.startsWith('audio/'))
+    // Accept all common audio formats including those with video/ MIME types (like mpeg)
+    const audioFilesArray = files.filter(f => {
+      const type = f.type.toLowerCase()
+      const name = f.name.toLowerCase()
+      return type.startsWith('audio/') || 
+             type === 'video/mpeg' || 
+             type === 'video/mp4' ||
+             name.endsWith('.mp3') || 
+             name.endsWith('.wav') || 
+             name.endsWith('.flac') || 
+             name.endsWith('.ogg') || 
+             name.endsWith('.m4a') || 
+             name.endsWith('.mpeg') || 
+             name.endsWith('.mpga') || 
+             name.endsWith('.aac') || 
+             name.endsWith('.wma') || 
+             name.endsWith('.aiff') || 
+             name.endsWith('.aif') || 
+             name.endsWith('.ape') || 
+             name.endsWith('.opus') || 
+             name.endsWith('.webm') ||
+             name.endsWith('.3gp') ||
+             name.endsWith('.amr')
+    })
     if (audioFilesArray.length === 0) {
       toast.error('Please upload audio files')
       return
@@ -184,7 +207,7 @@ export default function Upload() {
             <input
               type="file"
               ref={fileInputRef}
-              accept="audio/*"
+              accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a,.mpeg,.mpga,.aac,.wma,.aiff,.aif,.ape,.opus,.webm,.3gp,.amr"
               multiple
               onChange={handleFileSelect}
               style={{ display: 'none' }}
@@ -220,7 +243,7 @@ export default function Upload() {
             </button>
 
             <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '30px' }}>
-              Provide FLAC, WAV, ALAC, or AIFF for best audio quality. Max file size: 4GB
+              Supports: MP3, WAV, FLAC, OGG, M4A, MPEG, AAC, WMA, AIFF, APE, OPUS, WEBM, and more. Max: 200MB
             </p>
           </div>
         ) : (

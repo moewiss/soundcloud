@@ -98,7 +98,7 @@ class TrackController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:180',
             'description' => 'nullable|string|max:5000',
-            'file' => 'required|file|mimes:mp3,wav,flac,ogg,m4a|max:204800', // 200MB
+            'file' => 'required|file|mimes:mp3,wav,flac,ogg,m4a,mpeg,mpga,aac,wma,aiff,aif,ape,opus,webm,3gp,amr|max:204800', // 200MB - Support all major audio formats
             'cover' => 'nullable|image|max:5120', // 5MB
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
