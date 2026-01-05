@@ -21,6 +21,7 @@ import Login from "./pages/Login"
 import Register from "./pages/Register"
 import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
+import VerifyEmail from "./pages/VerifyEmail"
 import Admin from "./pages/Admin"
 import AdminPanel from "./pages/AdminPanel"
 
@@ -622,6 +623,7 @@ function AppContent() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
         </Routes>
       </main>
       <PlayerBar />

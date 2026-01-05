@@ -51,6 +51,7 @@ Route::post('/guest-login', [AuthController::class, 'guestLogin']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail']);
+Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

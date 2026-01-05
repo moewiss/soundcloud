@@ -89,6 +89,11 @@ export const api = {
     return res.data
   },
 
+  resendVerification: async (email) => {
+    const res = await axiosInstance.post('/resend-verification', { email })
+    return res.data
+  },
+
   // Tracks
   getTracks: async (params = {}) => {
     const res = await axiosInstance.get('/tracks', { params })
@@ -369,10 +374,6 @@ export const api = {
     return res.data
   },
   
-  generateResetLink: async (userId) => {
-    const res = await axiosInstance.post(`/admin/users/${userId}/reset-link`)
-    return res.data
-  },
   
   // Admin - Statistics & Activity
   getAdminStats: async () => {

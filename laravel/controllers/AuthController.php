@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Profile;
+use App\Mail\VerifyEmailMail;
+use App\Mail\ResetPasswordMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -22,10 +25,14 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
+        // Generate email verification token
+        $verificationToken = Str::random(60);
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'email_verification_token' => $verificationToken,
         ]);
 
         // Create default profile
@@ -34,11 +41,20 @@ class AuthController extends Controller
             'display_name' => $user->name,
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Send verification email
+        $frontendUrl = env('FRONTEND_URL', 'http://185.250.36.33:5173');
+        $verificationUrl = $frontendUrl . '/verify-email/' . $verificationToken;
+        
+        try {
+            Mail::to($user->email)->send(new VerifyEmailMail($verificationUrl, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send verification email: ' . $e->getMessage());
+        }
 
         return response()->json([
-            'user' => $user->load('profile'),
-            'token' => $token,
+            'message' => 'Registration successful! Please check your email to verify your account.',
+            'email' => $user->email,
+            'email_verified' => false,
         ], 201);
     }
 
@@ -78,6 +94,15 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
+        }
+
+        // Check if email is verified
+        if (is_null($user->email_verified_at)) {
+            return response()->json([
+                'message' => 'Please verify your email address before logging in.',
+                'email' => $user->email,
+                'requires_verification' => true,
+            ], 403);
         }
 
         $token = $user->createToken('auth-token')->plainTextToken;
@@ -128,13 +153,18 @@ class AuthController extends Controller
             'created_at' => now(),
         ]);
 
-        // In a real application, you would send an email here
-        // For now, we'll return the token (ONLY for development/testing)
+        // Send password reset email
         $frontendUrl = env('FRONTEND_URL', 'http://185.250.36.33:5173');
+        $resetUrl = $frontendUrl . '/reset-password?token=' . $token . '&email=' . $request->email;
+        
+        try {
+            Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send password reset email: ' . $e->getMessage());
+        }
+
         return response()->json([
-            'message' => 'Password reset link sent to your email.',
-            'reset_token' => $token, // Remove this in production!
-            'reset_url' => $frontendUrl . '/reset-password?token=' . $token . '&email=' . $request->email,
+            'message' => 'If your email is registered, you will receive a password reset link.',
         ]);
     }
 
@@ -188,6 +218,69 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Password has been reset successfully. You can now login with your new password.',
+        ]);
+    }
+
+    public function verifyEmail($token)
+    {
+        $user = User::where('email_verification_token', $token)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Invalid or expired verification token.',
+            ], 400);
+        }
+
+        // Mark email as verified
+        $user->email_verified_at = now();
+        $user->email_verification_token = null;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Email verified successfully! You can now log in.',
+            'email' => $user->email,
+        ]);
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            // For security, don't reveal if email exists
+            return response()->json([
+                'message' => 'If your email is registered, you will receive a verification link.',
+            ]);
+        }
+
+        // Check if already verified
+        if ($user->email_verified_at) {
+            return response()->json([
+                'message' => 'This email is already verified. Please try logging in.',
+            ]);
+        }
+
+        // Generate new verification token
+        $verificationToken = Str::random(60);
+        $user->email_verification_token = $verificationToken;
+        $user->save();
+
+        // Send verification email
+        $frontendUrl = env('FRONTEND_URL', 'http://185.250.36.33:5173');
+        $verificationUrl = $frontendUrl . '/verify-email/' . $verificationToken;
+        
+        try {
+            Mail::to($user->email)->send(new VerifyEmailMail($verificationUrl, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to resend verification email: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'If your email is registered, you will receive a verification link.',
         ]);
     }
 }

@@ -22,7 +22,6 @@ export default function AdminPanel() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [passwordData, setPasswordData] = useState({ password: '', password_confirmation: '' })
-  const [resetMode, setResetMode] = useState('direct') // 'direct' or 'link'
 
   // Tracks State
   const [tracks, setTracks] = useState([])
@@ -119,28 +118,17 @@ export default function AdminPanel() {
   }
 
   const handleResetPassword = async () => {
-    if (resetMode === 'direct') {
-      if (passwordData.password !== passwordData.password_confirmation) {
-        toast.error('Passwords do not match')
-        return
-      }
-      try {
-        await api.resetUserPassword(selectedUser.id, passwordData)
-        toast.success('Password reset successfully')
-        setShowPasswordModal(false)
-        setPasswordData({ password: '', password_confirmation: '' })
-      } catch (error) {
-        toast.error('Failed to reset password')
-      }
-    } else {
-      try {
-        const data = await api.generateResetLink(selectedUser.id)
-        await copyToClipboard(data.reset_url)
-        toast.success('Reset link copied to clipboard!')
-        setShowPasswordModal(false)
-      } catch (error) {
-        toast.error('Failed to generate reset link')
-      }
+    if (passwordData.password !== passwordData.password_confirmation) {
+      toast.error('Passwords do not match')
+      return
+    }
+    try {
+      await api.resetUserPassword(selectedUser.id, passwordData)
+      toast.success('Password reset successfully')
+      setShowPasswordModal(false)
+      setPasswordData({ password: '', password_confirmation: '' })
+    } catch (error) {
+      toast.error('Failed to reset password')
     }
   }
 
@@ -750,76 +738,41 @@ export default function AdminPanel() {
               Reset Password for {selectedUser?.display_name || selectedUser?.name}
             </h3>
 
-            {/* Mode Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-              <button
-                onClick={() => setResetMode('direct')}
+            <div>
+              <input
+                type="password"
+                placeholder="New password"
+                value={passwordData.password}
+                onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
                 style={{
-                  flex: 1,
-                  padding: '10px',
-                  background: resetMode === 'direct' ? 'var(--primary)' : 'var(--bg-primary)',
+                  width: '100%',
+                  padding: '12px',
+                  background: 'var(--bg-primary)',
                   border: '1px solid var(--border-medium)',
                   borderRadius: '8px',
-                  color: resetMode === 'direct' ? 'white' : 'var(--text-primary)',
-                  cursor: 'pointer'
+                  color: 'var(--text-primary)',
+                  marginBottom: '12px'
                 }}
-              >
-                Direct Reset
-              </button>
-              <button
-                onClick={() => setResetMode('link')}
+              />
+              <input
+                type="password"
+                placeholder="Confirm password"
+                value={passwordData.password_confirmation}
+                onChange={(e) => setPasswordData({ ...passwordData, password_confirmation: e.target.value })}
                 style={{
-                  flex: 1,
-                  padding: '10px',
-                  background: resetMode === 'link' ? 'var(--primary)' : 'var(--bg-primary)',
+                  width: '100%',
+                  padding: '12px',
+                  background: 'var(--bg-primary)',
                   border: '1px solid var(--border-medium)',
                   borderRadius: '8px',
-                  color: resetMode === 'link' ? 'white' : 'var(--text-primary)',
-                  cursor: 'pointer'
+                  color: 'var(--text-primary)',
+                  marginBottom: '20px'
                 }}
-              >
-                Generate Link
-              </button>
-            </div>
-
-            {resetMode === 'direct' ? (
-              <div>
-                <input
-                  type="password"
-                  placeholder="New password"
-                  value={passwordData.password}
-                  onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: 'var(--bg-primary)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '8px',
-                    color: 'var(--text-primary)',
-                    marginBottom: '12px'
-                  }}
-                />
-                <input
-                  type="password"
-                  placeholder="Confirm password"
-                  value={passwordData.password_confirmation}
-                  onChange={(e) => setPasswordData({ ...passwordData, password_confirmation: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: 'var(--bg-primary)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '8px',
-                    color: 'var(--text-primary)',
-                    marginBottom: '20px'
-                  }}
-                />
-              </div>
-            ) : (
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '14px' }}>
-                A reset link will be generated and copied to your clipboard. You can then send it to the user.
+              />
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '20px' }}>
+                <i className="fas fa-info-circle"></i> Tip: Users can also use "Forgot Password" from the login page to reset their password via email.
               </p>
-            )}
+            </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
@@ -835,7 +788,7 @@ export default function AdminPanel() {
                   fontWeight: '600'
                 }}
               >
-                {resetMode === 'direct' ? 'Reset Password' : 'Generate Link'}
+                Reset Password
               </button>
               <button
                 onClick={() => {

@@ -7,6 +7,8 @@ export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null)
+  const [resending, setResending] = useState(false)
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -37,9 +39,27 @@ export default function Login() {
       fetch('http://127.0.0.1:7243/ingest/b0b46084-7934-4818-98a5-24948a8c68b4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Login.jsx:28',message:'Login failed',data:{status:error.response?.status,errorData:error.response?.data,errorMessage:error.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2,H3,H4'})}).catch(()=>{});
       // #endregion
       
-      toast.error(error.response?.data?.message || 'Login failed')
+      // Handle unverified email
+      if (error.response?.status === 403 && error.response?.data?.requires_verification) {
+        setUnverifiedEmail(error.response.data.email)
+        toast.error('Please verify your email before logging in')
+      } else {
+        toast.error(error.response?.data?.message || 'Login failed')
+      }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResending(true)
+    try {
+      await api.resendVerification(unverifiedEmail || formData.email)
+      toast.success('Verification email sent! Please check your inbox.')
+    } catch (error) {
+      toast.error('Failed to resend verification email')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -163,6 +183,40 @@ export default function Login() {
                 )}
               </button>
             </form>
+
+            {unverifiedEmail && (
+              <div style={{ 
+                backgroundColor: '#fef3c7', 
+                padding: '15px', 
+                borderRadius: '8px',
+                border: '1px solid #f59e0b',
+                marginTop: '20px'
+              }}>
+                <p style={{ margin: '0 0 10px 0', color: '#92400e', fontWeight: '600' }}>
+                  <i className="fas fa-exclamation-triangle"></i> Email Not Verified
+                </p>
+                <p style={{ margin: '0 0 15px 0', color: '#92400e', fontSize: '14px' }}>
+                  Please check your email and click the verification link to activate your account.
+                </p>
+                <button 
+                  onClick={handleResendVerification} 
+                  className="btn btn-outline btn-block"
+                  disabled={resending}
+                >
+                  {resending ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane"></i>
+                      Resend Verification Email
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
 
             <div className="divider">
               <span>or</span>

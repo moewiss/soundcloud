@@ -30,6 +30,9 @@ export default function Register() {
   const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong']
   const strengthColors = ['', '#ef4444', '#f59e0b', '#eab308', '#22c55e', '#10b981']
 
+  const [registered, setRegistered] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -42,15 +45,9 @@ export default function Register() {
     
     try {
       const response = await api.register(formData)
-      localStorage.setItem('token', response.token)
-      localStorage.setItem('user', JSON.stringify(response.user))
-      toast.success('Account created successfully! 🎉')
-      
-      if (!response.email_verified) {
-        toast('Please verify your email address', { icon: '📧' })
-      }
-      
-      window.location.href = '/'
+      setRegisteredEmail(response.email || formData.email)
+      setRegistered(true)
+      toast.success('Account created! Please check your email 📧')
     } catch (error) {
       const errors = error.response?.data?.errors
       if (errors) {
@@ -58,6 +55,18 @@ export default function Register() {
       } else {
         toast.error(error.response?.data?.message || 'Registration failed')
       }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setLoading(true)
+    try {
+      await api.resendVerification(registeredEmail)
+      toast.success('Verification email sent! Please check your inbox.')
+    } catch (error) {
+      toast.error('Failed to resend verification email')
     } finally {
       setLoading(false)
     }
@@ -99,12 +108,14 @@ export default function Register() {
         {/* Right Side - Register Form */}
         <div className="auth-form-section">
           <div className="auth-form-container">
-            <div className="auth-header">
-              <h2>Create Account</h2>
-              <p>Fill in your details to get started</p>
-            </div>
+            {!registered ? (
+              <>
+                <div className="auth-header">
+                  <h2>Create Account</h2>
+                  <p>Fill in your details to get started</p>
+                </div>
 
-            <form onSubmit={handleSubmit} className="auth-form">
+                <form onSubmit={handleSubmit} className="auth-form">
               <div className="form-group">
                 <label htmlFor="name">
                   <i className="fas fa-user"></i>
@@ -254,6 +265,63 @@ export default function Register() {
             <div className="auth-switch">
               <p>Already have an account? <Link to="/login">Sign In</Link></p>
             </div>
+          </>
+            ) : (
+              <>
+                <div className="auth-header">
+                  <div className="icon-header">
+                    <i className="fas fa-envelope-open-text" style={{ fontSize: '3rem', color: '#FF5500' }}></i>
+                  </div>
+                  <h2>Check Your Email!</h2>
+                  <p>We've sent a verification link to:</p>
+                  <p style={{ fontWeight: 'bold', color: '#FF5500', fontSize: '1.1rem' }}>{registeredEmail}</p>
+                </div>
+
+                <div style={{ 
+                  backgroundColor: '#e0f2fe', 
+                  padding: '20px', 
+                  borderRadius: '8px',
+                  border: '1px solid #0284c7',
+                  marginTop: '20px'
+                }}>
+                  <p style={{ margin: '0 0 15px 0', color: '#075985', fontWeight: '600' }}>
+                    <i className="fas fa-info-circle"></i> Next Steps:
+                  </p>
+                  <ol style={{ margin: 0, paddingLeft: '20px', color: '#075985' }}>
+                    <li>Open your email inbox</li>
+                    <li>Find our verification email (check spam/junk if needed)</li>
+                    <li>Click the verification link</li>
+                    <li>Return here to log in</li>
+                  </ol>
+                </div>
+
+                <button 
+                  onClick={handleResendVerification} 
+                  className="btn btn-outline btn-block"
+                  disabled={loading}
+                  style={{ marginTop: '20px' }}
+                >
+                  {loading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane"></i>
+                      Resend Verification Email
+                    </>
+                  )}
+                </button>
+
+                <div className="auth-switch" style={{ marginTop: '20px' }}>
+                  <Link to="/login" className="back-link">
+                    <i className="fas fa-arrow-left"></i>
+                    Go to Login
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
