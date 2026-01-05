@@ -132,6 +132,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::post('/users/{id}/ban', [\App\Http\Controllers\Api\AdminController::class, 'banUser']);
     Route::post('/users/{id}/reset-password', [\App\Http\Controllers\Api\AdminController::class, 'resetUserPassword']);
     Route::post('/users/{id}/reset-link', [\App\Http\Controllers\Api\AdminController::class, 'generateResetLink']);
+    Route::post('/users/promote', [\App\Http\Controllers\Api\AdminController::class, 'promoteToAdmin']);
     
     // Statistics & Activity
     Route::get('/stats', [\App\Http\Controllers\Api\AdminController::class, 'getStats']);

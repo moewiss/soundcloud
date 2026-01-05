@@ -14,19 +14,17 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminController extends Controller
 {
-    public function __construct()
+    private function checkAdmin()
     {
-        $this->middleware(function ($request, $next) {
-            if (!auth()->user() || !auth()->user()->is_admin) {
-                return response()->json(['message' => 'Unauthorized. Admin access required.'], 403);
-            }
-            return $next($request);
-        });
+        if (!auth()->user() || !auth()->user()->is_admin) {
+            abort(403, 'Unauthorized. Admin access required.');
+        }
     }
     
     // User Management
     public function getUsers(Request $request)
     {
+        $this->checkAdmin();
         $query = User::with(['profile', 'tracks']);
         
         // Search
@@ -71,6 +69,7 @@ class AdminController extends Controller
     
     public function updateUser(Request $request, $id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
         
         $validated = $request->validate([
@@ -89,6 +88,7 @@ class AdminController extends Controller
     
     public function deleteUser($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
         
         // Prevent admin from deleting themselves
@@ -116,6 +116,7 @@ class AdminController extends Controller
     
     public function banUser($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
         
         // Prevent admin from banning themselves
@@ -144,8 +145,59 @@ class AdminController extends Controller
         ]);
     }
     
+    public function restoreUser($id)
+    {
+        $this->checkAdmin();
+        $user = User::withTrashed()->findOrFail($id);
+        
+        if (!$user->trashed()) {
+            return response()->json([
+                'message' => 'User is not deleted'
+            ], 400);
+        }
+        
+        $user->restore();
+        
+        return response()->json([
+            'message' => 'User restored successfully',
+            'user' => $user->load('profile')
+        ]);
+    }
+    
+    public function promoteToAdmin(Request $request)
+    {
+        $this->checkAdmin();
+        
+        $validated = $request->validate([
+            'email' => 'required|email|exists:users,email'
+        ]);
+        
+        $user = User::where('email', $validated['email'])->first();
+        
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found'
+            ], 404);
+        }
+        
+        if ($user->is_admin) {
+            return response()->json([
+                'message' => 'User is already an admin'
+            ], 400);
+        }
+        
+        $user->is_admin = true;
+        $user->save();
+        
+        return response()->json([
+            'message' => 'User promoted to admin successfully',
+            'user' => $user->load('profile')
+        ]);
+    }
+    
     public function resetUserPassword(Request $request, $id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
         
         $validated = $request->validate([
@@ -163,6 +215,7 @@ class AdminController extends Controller
     
     public function generateResetLink($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
         
         // Delete any existing tokens for this user
@@ -189,6 +242,7 @@ class AdminController extends Controller
     // Statistics
     public function getStats()
     {
+        $this->checkAdmin();
         $totalUsers = User::count();
         $totalTracks = Track::count();
         $pendingTracks = Track::where('status', 'pending')->count();
@@ -216,6 +270,7 @@ class AdminController extends Controller
     
     public function getActivity()
     {
+        $this->checkAdmin();
         // Get recent users (last 10)
         $recentUsers = User::with('profile')
             ->orderBy('created_at', 'desc')
@@ -266,6 +321,7 @@ class AdminController extends Controller
     // Content Moderation
     public function getComments(Request $request)
     {
+        $this->checkAdmin();
         $query = Comment::with(['user.profile', 'track']);
         
         // Search
@@ -281,6 +337,7 @@ class AdminController extends Controller
     
     public function deleteComment($id)
     {
+        $this->checkAdmin();
         $comment = Comment::findOrFail($id);
         $comment->delete();
         

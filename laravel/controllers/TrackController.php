@@ -114,6 +114,9 @@ class TrackController extends Controller
             $coverPath = $request->file('cover')->store('covers', 's3');
         }
 
+        // Auto-approve admin uploads, pending for non-admin
+        $status = auth()->user()->is_admin ? 'approved' : 'pending';
+        
         $track = Track::create([
             'user_id' => auth()->id(),
             'title' => $validated['title'],
@@ -122,7 +125,7 @@ class TrackController extends Controller
             'cover_path' => $coverPath,
             'tags' => $validated['tags'] ?? null,
             'category' => $validated['category'] ?? null,
-            'status' => 'approved', // Auto-approve tracks
+            'status' => $status,
         ]);
 
         // Try to get duration from uploaded file
@@ -153,9 +156,14 @@ class TrackController extends Controller
             \Log::warning("Could not dispatch transcode job: " . $e->getMessage());
         }
 
+        $message = $status === 'approved' 
+            ? 'Track uploaded and approved successfully' 
+            : 'Track uploaded successfully. It will be reviewed by an admin before being published.';
+        
         return response()->json([
-            'message' => 'Track uploaded successfully',
+            'message' => $message,
             'track' => $track->fresh(),
+            'status' => $status,
         ], 201);
     }
 

@@ -22,6 +22,8 @@ export default function AdminPanel() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [passwordData, setPasswordData] = useState({ password: '', password_confirmation: '' })
+  const [showPromoteModal, setShowPromoteModal] = useState(false)
+  const [promoteEmail, setPromoteEmail] = useState('')
 
   // Tracks State
   const [tracks, setTracks] = useState([])
@@ -129,6 +131,22 @@ export default function AdminPanel() {
       setPasswordData({ password: '', password_confirmation: '' })
     } catch (error) {
       toast.error('Failed to reset password')
+    }
+  }
+
+  const handlePromoteToAdmin = async () => {
+    if (!promoteEmail || !promoteEmail.includes('@')) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+    try {
+      const data = await api.promoteToAdmin(promoteEmail)
+      toast.success(data.message || 'User promoted to admin successfully!')
+      setShowPromoteModal(false)
+      setPromoteEmail('')
+      loadUsers() // Reload users list
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to promote user to admin')
     }
   }
 
@@ -343,6 +361,24 @@ export default function AdminPanel() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
               <h1 style={{ fontSize: '28px', color: 'var(--text-primary)' }}>User Management</h1>
+              <button
+                onClick={() => setShowPromoteModal(true)}
+                style={{
+                  padding: '12px 24px',
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <i className="fas fa-user-shield"></i>
+                Promote to Admin
+              </button>
             </div>
 
             {/* Filters */}
@@ -794,6 +830,107 @@ export default function AdminPanel() {
                 onClick={() => {
                   setShowPasswordModal(false)
                   setPasswordData({ password: '', password_confirmation: '' })
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '8px',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Promote to Admin Modal */}
+      {showPromoteModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: '16px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%',
+            border: '1px solid var(--border-light)'
+          }}>
+            <h3 style={{ fontSize: '20px', marginBottom: '20px', color: 'var(--text-primary)' }}>
+              <i className="fas fa-user-shield" style={{ color: 'var(--primary)', marginRight: '10px' }}></i>
+              Promote User to Admin
+            </h3>
+
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
+              Enter the email address of the user you want to promote to admin. This will grant them full administrative privileges.
+            </p>
+
+            <input
+              type="email"
+              placeholder="user@example.com"
+              value={promoteEmail}
+              onChange={(e) => setPromoteEmail(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handlePromoteToAdmin()}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '8px',
+                color: 'var(--text-primary)',
+                marginBottom: '20px',
+                fontSize: '14px'
+              }}
+            />
+
+            <div style={{
+              background: '#fff3cd',
+              padding: '12px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              border: '1px solid #ffc107'
+            }}>
+              <p style={{ margin: 0, color: '#856404', fontSize: '13px' }}>
+                <i className="fas fa-exclamation-triangle" style={{ marginRight: '8px' }}></i>
+                <strong>Warning:</strong> This action will give the user full access to the admin panel, including the ability to manage users, tracks, and content.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={handlePromoteToAdmin}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                <i className="fas fa-check" style={{ marginRight: '8px' }}></i>
+                Promote to Admin
+              </button>
+              <button
+                onClick={() => {
+                  setShowPromoteModal(false)
+                  setPromoteEmail('')
                 }}
                 style={{
                   flex: 1,

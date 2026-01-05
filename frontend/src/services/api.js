@@ -374,6 +374,10 @@ export const api = {
     return res.data
   },
   
+  promoteToAdmin: async (email) => {
+    const res = await axiosInstance.post('/admin/users/promote', { email })
+    return res.data
+  },
   
   // Admin - Statistics & Activity
   getAdminStats: async () => {

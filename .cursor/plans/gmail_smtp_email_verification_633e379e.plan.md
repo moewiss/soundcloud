@@ -4,7 +4,7 @@ overview: Set up Gmail SMTP for sending verification emails for both forgot pass
 todos:
   - id: gmail-app-password
     content: Get Gmail App Password and configure Laravel .env with SMTP settings
-    status: in_progress
+    status: completed
   - id: email-verification-migration
     content: Create and run database migration for email_verification_token column
     status: completed
@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: deploy-and-test
     content: Deploy all changes and test complete email verification flow
-    status: pending
+    status: completed
     dependencies:
       - gmail-app-password
       - email-verification-migration
@@ -268,4 +268,3 @@ sequenceDiagram
 **Deployment:**
 
 - Deploy migrations
-- Restart Laravel app to load new .env variables
