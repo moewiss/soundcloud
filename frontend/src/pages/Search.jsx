@@ -197,7 +197,7 @@ export default function Search() {
     return {
       all: (results.tracks?.length || 0) + (results.users?.length || 0) + (results.playlists?.length || 0),
       tracks: results.tracks?.length || 0,
-      users: results.users?.length || 0,
+      people: results.users?.length || 0,
       playlists: results.playlists?.length || 0
     }
   }
@@ -208,7 +208,7 @@ export default function Search() {
     switch (activeFilter) {
       case 'tracks':
         return { tracks: results.tracks || [], users: [], playlists: [] }
-      case 'users':
+      case 'people':
         return { tracks: [], users: results.users || [], playlists: [] }
       case 'playlists':
         return { tracks: [], users: [], playlists: results.playlists || [] }
@@ -346,7 +346,7 @@ export default function Search() {
           )}
 
           {/* Users Results */}
-          {(activeFilter === 'all' || activeFilter === 'users') && filteredResults.users?.length > 0 && (
+          {(activeFilter === 'all' || activeFilter === 'people') && filteredResults.users?.length > 0 && (
             <div className="section">
               <div className="section-header">
                 <h2 className="section-title">
@@ -371,6 +371,36 @@ export default function Search() {
                     <button className="btn-follow">
                       <i className="fas fa-user-plus"></i> Follow
                     </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Playlists Results */}
+          {(activeFilter === 'all' || activeFilter === 'playlists') && filteredResults.playlists?.length > 0 && (
+            <div className="section">
+              <div className="section-header">
+                <h2 className="section-title">
+                  <i className="fas fa-list"></i>
+                  Playlists
+                </h2>
+                <span className="section-count">{filteredResults.playlists.length} results</span>
+              </div>
+
+              <div className="users-grid">
+                {filteredResults.playlists.map(playlist => (
+                  <div 
+                    key={playlist.id} 
+                    className="user-card"
+                    onClick={() => navigate(`/playlists/${playlist.id}`)}
+                  >
+                    <div className="user-avatar-large" style={{ background: '#10b981' }}>
+                      <i className="fas fa-list" style={{ fontSize: '2rem' }}></i>
+                    </div>
+                    <h3>{playlist.name}</h3>
+                    <p>{playlist.tracks_count || 0} tracks</p>
+                    {playlist.user && <p className="text-muted">by {playlist.user.name}</p>}
                   </div>
                 ))}
               </div>
