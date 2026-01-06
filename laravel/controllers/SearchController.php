@@ -88,12 +88,21 @@ class SearchController extends Controller
         }
 
         if ($filter === 'everything' || $filter === 'playlists') {
-            $results['playlists'] = \App\Models\Playlist::where('title', 'like', "%{$query}%")
-                ->orWhere('description', 'like', "%{$query}%")
-                ->with(['user.profile'])
-                ->withCount('tracks')
-                ->limit(20)
-                ->get();
+            $words = explode(' ', $query);
+            $results['playlists'] = \App\Models\Playlist::where(function ($q) use ($query, $words) {
+                $q->where('name', 'like', "%{$query}%")
+                    ->orWhere('description', 'like', "%{$query}%");
+                // Fuzzy match on individual words
+                foreach ($words as $word) {
+                    if (strlen($word) > 2) {
+                        $q->orWhere('name', 'like', "%{$word}%");
+                    }
+                }
+            })
+            ->with(['user.profile'])
+            ->withCount('tracks')
+            ->limit(20)
+            ->get();
         }
 
         return response()->json($results);
