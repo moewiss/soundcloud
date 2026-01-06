@@ -150,18 +150,35 @@ class AdminController extends Controller
         $this->checkAdmin();
         $user = User::withTrashed()->findOrFail($id);
         
-        if (!$user->trashed()) {
+        // Prevent admin from restoring themselves
+        if ($user->id === auth()->id()) {
             return response()->json([
-                'message' => 'User is not deleted'
-            ], 400);
+                'message' => 'You cannot restore your own account'
+            ], 403);
         }
         
-        $user->restore();
+        // Handle soft-deleted users
+        if ($user->trashed()) {
+            $user->restore();
+            return response()->json([
+                'message' => 'User restored successfully',
+                'user' => $user->load('profile')
+            ]);
+        }
+        
+        // Handle banned users
+        if ($user->banned_at) {
+            $user->banned_at = null;
+            $user->save();
+            return response()->json([
+                'message' => 'User unbanned successfully',
+                'user' => $user->load('profile')
+            ]);
+        }
         
         return response()->json([
-            'message' => 'User restored successfully',
-            'user' => $user->load('profile')
-        ]);
+            'message' => 'User is already active'
+        ], 400);
     }
     
     public function promoteToAdmin(Request $request)
