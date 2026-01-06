@@ -246,7 +246,7 @@ class AdminController extends Controller
         $totalUsers = User::count();
         $totalTracks = Track::count();
         $pendingTracks = Track::where('status', 'pending')->count();
-        $totalPlays = Track::sum('plays_count');
+        $totalPlays = Track::sum('plays');
         $totalLikes = DB::table('likes')->count();
         
         // Users registered in last 30 days
