@@ -1,542 +1,395 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
+import { copyToClipboard } from '../utils/clipboard'
+import AddToPlaylistModal from '../components/AddToPlaylistModal'
+import TrackMenu from '../components/TrackMenu'
+import {
+  Play, Pause, Heart, Repeat2, Plus, Share2, Music, Search, Loader2,
+  Upload, Users, Clock, Trash2, LayoutGrid, X, ListMusic, History
+} from 'lucide-react'
+
+/* ── Constants ── */
+const GENRES = [
+  { id: 'all', label: 'All' }, { id: 'Nasheeds', label: 'Nasheeds' },
+  { id: 'Quran', label: 'Quran' }, { id: 'Lectures', label: 'Lectures' },
+  { id: 'Duas', label: 'Duas' }, { id: 'Broadcast', label: 'Podcasts' },
+]
+const STATUSES = [
+  { id: 'all', label: 'All' }, { id: 'approved', label: 'Approved' },
+  { id: 'pending', label: 'Pending' }, { id: 'rejected', label: 'Rejected' },
+]
+const fmtCount = (n) => { if (!n && n !== 0) return '0'; if (n >= 1e6) return `${(n/1e6).toFixed(1)}M`; if (n >= 1e3) return `${(n/1e3).toFixed(1)}K`; return String(n) }
+const fmtDur = (s) => { if (!s) return '0:00'; return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}` }
 
 export default function Library() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview')
-  const [tracks, setTracks] = useState([])
-  const [likedTracks, setLikedTracks] = useState([])
+  const navigate = useNavigate()
+  const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
+
+  /* ── State ── */
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'playlists')
+  const [query, setQuery] = useState('')
+  const [genre, setGenre] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+
   const [playlists, setPlaylists] = useState([])
+  const [likedTracks, setLikedTracks] = useState([])
+  const [reposts, setReposts] = useState([])
+  const [myTracks, setMyTracks] = useState([])
   const [following, setFollowing] = useState([])
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
-  const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer()
-  const navigate = useNavigate()
 
+  const [likedIds, setLikedIds] = useState(new Set())
+  const [repostedIds, setRepostedIds] = useState(new Set())
+  const [playlistModalTrack, setPlaylistModalTrack] = useState(null)
+
+  /* ── Tabs ── */
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'likes', label: 'Likes' },
-    { id: 'playlists', label: 'Playlists' },
-    { id: 'albums', label: 'Albums' },
-    { id: 'stations', label: 'Stations' },
-    { id: 'following', label: 'Following' },
-    { id: 'history', label: 'History' }
+    { key: 'playlists', label: 'Playlists', icon: ListMusic },
+    { key: 'likes', label: 'Liked', icon: Heart },
+    { key: 'reposts', label: 'Reposts', icon: Repeat2 },
+    { key: 'uploads', label: 'Uploads', icon: Upload },
+    { key: 'following', label: 'Following', icon: Users },
+    { key: 'history', label: 'History', icon: History },
   ]
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab])
+  /* ── Data Loading ── */
+  useEffect(() => { loadData() }, [activeTab])
 
   const loadData = async () => {
+    if (!user) return
     setLoading(true)
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    
     try {
-      if (activeTab === 'overview' || activeTab === 'likes') {
-        const liked = await api.getLikedTracks().catch(() => [])
-        setLikedTracks(Array.isArray(liked) ? liked : [])
-      }
-      if (activeTab === 'overview' || activeTab === 'playlists') {
-        const lists = await api.getPlaylists().catch(() => [])
-        setPlaylists(Array.isArray(lists) ? lists : [])
-      }
-      if (activeTab === 'overview' || activeTab === 'history') {
-        const hist = await api.getRecentHistory().catch(() => [])
-        setHistory(Array.isArray(hist) ? hist : [])
-      }
-      if (activeTab === 'overview' || activeTab === 'following') {
-        // Fetch users the current user is following
-        try {
-          // Try getting from /user/following first (current user's following)
-          let followingList = await api.getMyFollowing().catch(() => null)
-          
-          // Fallback to /users/:id/following
-          if (!followingList && currentUser.id) {
-            followingList = await api.getFollowing(currentUser.id).catch(() => [])
-          }
-          
-          // Parse the result
-          let users = []
-          if (Array.isArray(followingList)) {
-            users = followingList
-          } else if (followingList?.data) {
-            users = followingList.data
-          }
-          
-          // Enrich user data with full stats by fetching each user
-          const enrichedUsers = await Promise.all(
-            users.map(async (u) => {
-              try {
-                const fullUser = await api.getUser(u.id || u.following_id || u.user_id)
-                return fullUser
-              } catch (e) {
-                return u // Return original if fetch fails
-              }
-            })
-          )
-          
-          setFollowing(enrichedUsers.filter(u => u && u.id))
-        } catch (e) {
-          console.error('Error fetching following:', e)
-          setFollowing([])
+      switch (activeTab) {
+        case 'playlists': {
+          const r = await api.getPlaylists()
+          setPlaylists(Array.isArray(r) ? r : r.data || [])
+          break
+        }
+        case 'likes': {
+          const r = await api.getLikedTracks()
+          const list = Array.isArray(r) ? r : r.data || []
+          setLikedTracks(list)
+          setLikedIds(new Set(list.map(t => (t.track || t).id || t.id)))
+          break
+        }
+        case 'reposts': {
+          const r = await api.getRepostedTracks()
+          const list = Array.isArray(r) ? r : r.data || []
+          setReposts(list)
+          setRepostedIds(new Set(list.map(t => (t.track || t).id || t.id)))
+          break
+        }
+        case 'uploads': {
+          const r = await api.getMyTracks()
+          setMyTracks(Array.isArray(r) ? r : r.data || [])
+          break
+        }
+        case 'following': {
+          const r = await api.getMyFollowing()
+          setFollowing(Array.isArray(r) ? r : r.data || [])
+          break
+        }
+        case 'history': {
+          const r = await api.getRecentHistory()
+          setHistory(Array.isArray(r) ? r : r.data || [])
+          break
         }
       }
-      const allTracksData = await api.getTracks().catch(() => [])
-      const allTracks = Array.isArray(allTracksData) ? allTracksData : (allTracksData?.data || allTracksData?.tracks || [])
-      setTracks(allTracks)
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoading(false)
-    }
+    } catch {}
+    finally { setLoading(false) }
   }
 
-  const handleTabChange = (tabId) => {
-    setActiveTab(tabId)
-    setSearchParams({ tab: tabId })
+  const handleTab = (key) => {
+    setActiveTab(key)
+    setSearchParams({ tab: key })
+    setQuery('')
+    setGenre('all')
+    setStatusFilter('all')
   }
 
-  const handlePlay = (track) => {
+  /* ── Actions ── */
+  const handlePlay = (track, list) => {
     if (!track) return
-    if (currentTrack?.id === track.id) {
-      togglePlay()
-    } else {
-      playTrack(track)
-    }
-  }
-
-  const handleClearHistory = async () => {
-    try {
-      await api.clearHistory()
-      setHistory([])
-      toast.success('History cleared')
-    } catch (error) {
-      toast.error('Failed to clear history')
-    }
+    if (currentTrack?.id === track.id) togglePlay()
+    else playTrack(track, list || [track])
   }
 
   const handleLike = async (trackId, e) => {
     e?.stopPropagation()
+    if (!user) { toast.error('Please log in'); return }
+    const was = likedIds.has(trackId)
+    setLikedIds(prev => { const n = new Set(prev); was ? n.delete(trackId) : n.add(trackId); return n })
     try {
-      const result = await api.toggleLike(trackId)
-      
-      // Update tracks state (for Overview section)
-      setTracks(prev => prev.map(t => 
-        t.id === trackId 
-          ? { ...t, is_liked: result.is_liked, likes_count: result.likes_count }
-          : t
-      ))
-      
-      // Update liked tracks state (for Likes section)
-      if (!result.is_liked) {
-        setLikedTracks(prev => prev.filter(t => t.id !== trackId))
-        toast.success('Removed from likes')
-      } else {
-        setLikedTracks(prev => prev.map(t => 
-          t.id === trackId 
-            ? { ...t, likes_count: result.likes_count, is_liked: true }
-            : t
-        ))
-        toast.success('Added to likes')
+      const res = await api.toggleLike(trackId)
+      if (res.is_liked !== undefined) {
+        setLikedIds(prev => { const n = new Set(prev); res.is_liked ? n.add(trackId) : n.delete(trackId); return n })
+        if (!res.is_liked && activeTab === 'likes') setLikedTracks(prev => prev.filter(t => t.id !== trackId))
       }
-    } catch (error) {
-      toast.error('Please login to like tracks')
-    }
+    } catch { setLikedIds(prev => { const n = new Set(prev); was ? n.add(trackId) : n.delete(trackId); return n }) }
   }
 
-  const handleUnfollow = async (userId) => {
+  const handleRepost = async (trackId, e) => {
+    e?.stopPropagation()
+    if (!user) { toast.error('Please log in'); return }
+    const was = repostedIds.has(trackId)
+    setRepostedIds(prev => { const n = new Set(prev); was ? n.delete(trackId) : n.add(trackId); return n })
+    toast.success(was ? 'Repost removed' : 'Reposted')
     try {
-      await api.toggleFollow(userId)
-      // Remove from following list
-      setFollowing(prev => prev.filter(u => u.id !== userId))
-      toast.success('Unfollowed')
-    } catch (error) {
-      toast.error('Failed to unfollow')
-    }
+      const res = await api.toggleRepost(trackId)
+      if (res.is_reposted !== undefined) setRepostedIds(prev => { const n = new Set(prev); res.is_reposted ? n.add(trackId) : n.delete(trackId); return n })
+    } catch { setRepostedIds(prev => { const n = new Set(prev); was ? n.add(trackId) : n.delete(trackId); return n }) }
   }
 
+  const handleClearHistory = async () => {
+    try { await api.clearHistory(); setHistory([]); toast.success('History cleared') }
+    catch { toast.error('Failed to clear history') }
+  }
+
+  const isPlaying_ = (track) => currentTrack?.id === track?.id && isPlaying
+
+  /* ── Filters ── */
+  const filterByGenre = (list) => {
+    let filtered = list
+    if (genre !== 'all') filtered = filtered.filter(t => (t.category || '').toLowerCase() === genre.toLowerCase())
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(q) || (t.user?.name || '').toLowerCase().includes(q))
+    }
+    return filtered
+  }
+
+  const filterByStatus = (list) => {
+    let filtered = list
+    if (statusFilter !== 'all') filtered = filtered.filter(t => t.status === statusFilter)
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(q))
+    }
+    return filtered
+  }
+
+  const filterByName = (list) => {
+    if (!query.trim()) return list
+    const q = query.toLowerCase()
+    return list.filter(item => ((item.name || item.title || '') + ' ' + (item.user?.name || '')).toLowerCase().includes(q))
+  }
+
+  /* ── Track Row Renderer ── */
+  const renderTrackRow = (track, i, trackList, opts = {}) => {
+    const playing = isPlaying_(track)
+    const liked = likedIds.has(track.id)
+    const reposted = repostedIds.has(track.id)
+    return (
+      <div key={track.id} className={`up-track${playing ? ' playing' : ''}`}
+        onClick={() => opts.noNav ? null : navigate(`/tracks/${track.id}`)}>
+        <div className="up-track-left">
+          <span className="up-track-num" onClick={e => { e.stopPropagation(); if (!opts.disabled) handlePlay(track, trackList) }}>
+            {playing ? <span className="up-track-eq"><span /><span /><span /></span> : i + 1}
+          </span>
+          <div className="up-track-thumb" onClick={e => { e.stopPropagation(); if (!opts.disabled) handlePlay(track, trackList) }}>
+            {track.cover_url ? <img src={track.cover_url} alt="" /> : <div className="up-track-thumb-placeholder"><Music size={16} /></div>}
+            {!opts.disabled && <div className="up-track-thumb-overlay">{playing ? <Pause size={16} /> : <Play size={16} style={{ marginLeft: 1 }} />}</div>}
+          </div>
+          <div className="up-track-info">
+            <span className={`up-track-title${playing ? ' active' : ''}`}>{track.title}</span>
+            <span className="up-track-artist">{track.user?.name || ''}</span>
+            <span className="up-track-plays-sub">{fmtCount(track.plays_count || track.plays || 0)} plays</span>
+          </div>
+        </div>
+        <div className="up-track-right" onClick={e => e.stopPropagation()}>
+          {opts.statusBadge && <span className={`lib-badge lib-badge--${track.status}`}>{track.status}</span>}
+          <button className={`up-act${liked ? ' up-act--on' : ''}`} onClick={e => handleLike(track.id, e)}><Heart size={15} fill={liked ? 'currentColor' : 'none'} /></button>
+          <button className={`up-act${reposted ? ' up-act--on' : ''}`} onClick={e => handleRepost(track.id, e)}><Repeat2 size={15} /></button>
+          <button className="up-act" onClick={e => { e.stopPropagation(); setPlaylistModalTrack(track) }}><Plus size={15} /></button>
+          <button className="up-act" onClick={e => { e.stopPropagation(); copyToClipboard(`${window.location.origin}/tracks/${track.id}`); toast.success('Link copied') }}><Share2 size={15} /></button>
+          <TrackMenu
+            track={track}
+            trackList={trackList}
+            onAddToPlaylist={(t) => setPlaylistModalTrack(t)}
+            onLike={(id, e) => handleLike(id, e)}
+            onRepost={(id, e) => handleRepost(id, e)}
+            isLiked={liked}
+            isReposted={reposted}
+          />
+          <span className="up-track-duration">{fmtDur(track.duration_seconds || track.duration)}</span>
+        </div>
+      </div>
+    )
+  }
+
+  /* ── Not logged in ── */
+  if (!user) return (
+    <div className="lib-page">
+      <div className="up-empty" style={{ paddingTop: '20vh' }}>
+        <Music size={48} style={{ color: 'var(--sp-text-muted)', marginBottom: 16 }} />
+        <p>Log in to see your library</p>
+        <button onClick={() => navigate('/login')} className="up-showmore" style={{ marginTop: 16 }}>Log In</button>
+      </div>
+    </div>
+  )
+
+  /* ══════════════════════════════════════
+     RENDER
+     ══════════════════════════════════════ */
   return (
-    <div className="page">
-      {/* Tabs */}
-      <div className="library-tabs">
+    <div className="lib-page">
+      {/* ── Header ── */}
+      <div className="lib-header">
+        <h1 className="lib-title">Your Library</h1>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className="lib-tabs">
         {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`library-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.label}
+          <button key={tab.key} className={`lib-tab${activeTab === tab.key ? ' active' : ''}`} onClick={() => handleTab(tab.key)}>
+            <tab.icon size={14} />{tab.label}
           </button>
         ))}
       </div>
 
-      {loading ? (
-        <div className="loading-state">
-          <i className="fas fa-spinner fa-spin"></i>
-          <p>Loading...</p>
-        </div>
-      ) : (
-        <>
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <>
-              {/* Recently Played */}
-              <div className="section">
-                <div className="section-header">
-                  <h2 className="section-title">Recently played</h2>
-                  <span className="section-link" onClick={() => handleTabChange('history')}>View all</span>
-                </div>
-                <div className="track-grid">
-                  {tracks.slice(0, 6).map(track => (
-                    <div key={track.id} className="track-card" onClick={() => navigate(`/tracks/${track.id}`)}>
-                      <div className="track-artwork">
-                        {track.cover_url ? (
-                          <img src={track.cover_url} alt={track.title} />
-                        ) : (
-                          <i className="fas fa-music"></i>
-                        )}
-                        <button className="track-play-btn" onClick={(e) => { e.stopPropagation(); handlePlay(track); }}>
-                          <i className={`fas fa-${currentTrack?.id === track.id && isPlaying ? 'pause' : 'play'}`}></i>
-                        </button>
-                        <button 
-                          className={`track-like-btn ${track.is_liked ? 'active' : ''}`}
-                          onClick={(e) => handleLike(track.id, e)}
-                        >
-                          <i className="fas fa-heart"></i>
-                        </button>
-                      </div>
-                      <div className="track-info">
-                        <div className="track-title">{track.title}</div>
-                        <div className="track-artist">{track.user?.name}</div>
-                        <div className="track-stats">
-                          <span><i className="fas fa-play"></i> {track.plays_count || 0}</span>
-                          <button 
-                            className={`like-stat-btn ${track.is_liked ? 'active' : ''}`}
-                            onClick={(e) => handleLike(track.id, e)}
-                          >
-                            <i className="fas fa-heart"></i> {track.likes_count || 0}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* ── Content ── */}
+      <div className="lib-content">
 
-              {/* Likes */}
-              <div className="section">
-                <div className="section-header">
-                  <h2 className="section-title">Likes</h2>
-                  <span className="section-link" onClick={() => handleTabChange('likes')}>Browse trending playlists</span>
-                </div>
-                {likedTracks.length === 0 ? (
-                  <div className="empty-state" style={{ padding: '40px' }}>
-                    <p>You haven't liked any tracks yet</p>
-                  </div>
-                ) : (
-                  <div className="track-grid">
-                    {likedTracks.slice(0, 6).map(item => (
-                      <div key={item.id} className="track-card" onClick={() => navigate(`/tracks/${item.track?.id}`)}>
-                        <div className="track-artwork">
-                          {item.track?.cover_url ? (
-                            <img src={item.track.cover_url} alt="" />
-                          ) : (
-                            <i className="fas fa-music"></i>
-                          )}
-                          <button className="track-play-btn" onClick={(e) => { e.stopPropagation(); handlePlay(item.track); }}>
-                            <i className="fas fa-play"></i>
-                          </button>
-                        </div>
-                        <div className="track-info">
-                          <div className="track-title">
-                            <i className="fas fa-heart" style={{ color: 'var(--primary)', marginRight: '6px', fontSize: '11px' }}></i>
-                            {item.track?.title}
-                          </div>
-                          <div className="track-artist">{item.track?.user?.name}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Likes Tab */}
-          {activeTab === 'likes' && (
-            <div className="section">
-              <div className="section-header">
-                <h2 className="section-title">Hear the tracks you've liked:</h2>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>View</span>
-                  <button style={{ padding: '6px 10px', background: 'var(--bg-white)', border: '1px solid var(--border-light)', borderRadius: '3px', color: 'var(--text-primary)' }}>
-                    <i className="fas fa-th"></i>
-                  </button>
-                  <button style={{ padding: '6px 10px', background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '3px', color: 'var(--text-muted)' }}>
-                    <i className="fas fa-list"></i>
-                  </button>
-                </div>
-              </div>
-              {likedTracks.length === 0 ? (
-                <div className="empty-state">
-                  <i className="fas fa-heart"></i>
-                  <h3>No liked tracks yet</h3>
-                  <p>Like tracks to see them here</p>
-                </div>
-              ) : (
-                <div className="track-grid">
-                  {likedTracks.map(item => (
-                    <div key={item.id} className="track-card" onClick={() => navigate(`/tracks/${item.id}`)}>
-                      <div className="track-artwork">
-                        {item.cover_url ? (
-                          <img src={item.cover_url} alt="" />
-                        ) : (
-                          <i className="fas fa-music"></i>
-                        )}
-                        <button className="track-play-btn" onClick={(e) => { e.stopPropagation(); handlePlay(item); }}>
-                          <i className="fas fa-play"></i>
-                        </button>
-                      </div>
-                      <div className="track-info">
-                        <div className="track-title">
-                          <i className="fas fa-heart" style={{ color: 'var(--primary)', marginRight: '6px', fontSize: '11px' }}></i>
-                          {item.title}
-                        </div>
-                        <div className="track-artist">{item.user?.name}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* PLAYLISTS */}
+        {activeTab === 'playlists' && (
+          loading ? <div className="up-empty"><Loader2 size={20} className="up-spin" /> Loading...</div> :
+          <div className="up-pl-grid">
+            {/* Create card */}
+            <div className="lib-create-card" onClick={() => navigate('/playlists')}>
+              <Plus size={28} />
+              <span>Create Playlist</span>
             </div>
-          )}
-
-          {/* Playlists Tab */}
-          {activeTab === 'playlists' && (
-            <div className="section">
-              <div className="section-header">
-                <h2 className="section-title">Hear your own playlists and the playlists you've liked:</h2>
-              </div>
-              {playlists.length === 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '20px' }}>
-                  <div 
-                    className="track-card" 
-                    style={{ border: '2px dashed var(--border-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', aspectRatio: '1', cursor: 'pointer' }}
-                    onClick={() => navigate('/playlists')}
-                  >
-                    <i className="fas fa-plus" style={{ fontSize: '32px', color: 'var(--text-muted)', marginBottom: '10px' }}></i>
-                    <span style={{ color: 'var(--text-secondary)' }}>Create playlist</span>
+            {filterByName(playlists).map(pl => (
+              <div key={pl.id} className="up-pl-card" onClick={() => navigate(`/playlists/${pl.id}`)}>
+                <div className="up-pl-cover">
+                  {pl.cover_url ? <img src={pl.cover_url} alt="" className="up-pl-img" />
+                    : <div className="up-pl-empty"><Music size={28} /></div>}
+                  <div className="up-pl-hover">
+                    <button className="up-pl-play" onClick={e => e.stopPropagation()}><Play size={18} style={{ marginLeft: 2 }} /></button>
                   </div>
                 </div>
-              ) : (
-                <div className="track-grid">
-                  {playlists.map(playlist => (
-                    <div key={playlist.id} className="track-card">
-                      <div className="track-artwork" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))' }}>
-                        <i className="fas fa-list" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '40px', color: 'white' }}></i>
-                      </div>
-                      <div className="track-info">
-                        <div className="track-title">{playlist.name}</div>
-                        <div className="track-artist">{playlist.tracks_count || 0} tracks</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Albums Tab */}
-          {activeTab === 'albums' && (
-            <div className="empty-state">
-              <i className="fas fa-compact-disc"></i>
-              <h3>You haven't liked any albums yet</h3>
-            </div>
-          )}
-
-          {/* Stations Tab */}
-          {activeTab === 'stations' && (
-            <div className="empty-state">
-              <i className="fas fa-broadcast-tower"></i>
-              <h3>No stations yet</h3>
-              <p>Create stations based on your favorite tracks</p>
-            </div>
-          )}
-
-          {/* Following Tab */}
-          {activeTab === 'following' && (
-            <div className="section">
-              <div className="section-header">
-                <h2 className="section-title">Artists you follow:</h2>
-              </div>
-              
-              {following.length === 0 ? (
-                <div className="empty-state">
-                  <i className="fas fa-user-friends"></i>
-                  <h3>You aren't following anyone yet</h3>
-                  <p>Follow artists to see their updates</p>
-                  <button className="btn btn-primary" onClick={() => navigate('/search')}>Find artists</button>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
-                  {following.map(user => (
-                    <div 
-                      key={user.id} 
-                      style={{
-                        background: 'var(--bg-white)',
-                        borderRadius: 'var(--radius-lg)',
-                        padding: '20px',
-                        textAlign: 'center',
-                        border: '1px solid var(--border-light)',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s, box-shadow 0.2s'
-                      }}
-                      onClick={() => navigate(`/users/${user.id}`)}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
-                      }}
-                    >
-                      {/* Avatar */}
-                      <div style={{
-                        width: '100px',
-                        height: '100px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '36px',
-                        fontWeight: '600',
-                        color: 'white',
-                        margin: '0 auto 15px'
-                      }}>
-                        {user.avatar_url ? (
-                          <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                        ) : (
-                          user.name?.charAt(0) || 'U'
-                        )}
-                      </div>
-                      
-                      {/* Name */}
-                      <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: 'var(--text-primary)' }}>
-                        {user.name}
-                      </h3>
-                      
-                      {/* Stats */}
-                      <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '15px' }}>
-                        {user.tracks_count || 0} tracks · {user.followers_count || 0} followers
-                      </p>
-                      
-                      {/* Unfollow Button */}
-                      <button 
-                        className="btn"
-                        style={{ 
-                          padding: '8px 20px',
-                          fontSize: '13px',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-light)'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleUnfollow(user.id)
-                        }}
-                      >
-                        <i className="fas fa-user-check" style={{ marginRight: '6px' }}></i>
-                        Following
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* History Tab */}
-          {activeTab === 'history' && (
-            <div className="section">
-              <div className="section-header">
-                <h2 className="section-title">Recently played:</h2>
-                {history.length > 0 && (
-                  <button className="section-link" onClick={handleClearHistory}>Clear all history</button>
-                )}
-              </div>
-              
-              {/* Recent Carousel */}
-              <div style={{ marginBottom: '30px' }}>
-                <div className="track-grid">
-                  {tracks.slice(0, 6).map(track => (
-                    <div key={track.id} className="track-card" onClick={() => navigate(`/tracks/${track.id}`)}>
-                      <div className="track-artwork">
-                        {track.cover_url ? (
-                          <img src={track.cover_url} alt="" />
-                        ) : (
-                          <i className="fas fa-music"></i>
-                        )}
-                        <button className="track-play-btn" onClick={(e) => { e.stopPropagation(); handlePlay(track); }}>
-                          <i className="fas fa-play"></i>
-                        </button>
-                      </div>
-                      <div className="track-info">
-                        <div className="track-title">{track.title}</div>
-                        <div className="track-artist">{track.user?.name}</div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="up-pl-info">
+                  <h4 className="up-pl-name">{pl.name}</h4>
+                  <p className="up-pl-meta">{pl.tracks_count || 0} tracks</p>
                 </div>
               </div>
+            ))}
+            {playlists.length === 0 && <div className="up-empty" style={{ gridColumn: '1 / -1' }}>No playlists yet</div>}
+          </div>
+        )}
 
-              <h3 style={{ fontSize: '16px', marginBottom: '20px', color: 'var(--text-primary)' }}>Hear the tracks you've played:</h3>
-              
-              {history.length === 0 ? (
-                <div className="empty-state">
-                  <i className="fas fa-history"></i>
-                  <h3>No listening history</h3>
-                  <p>Tracks you play will appear here</p>
-                </div>
-              ) : (
-                <div className="feed-list">
-                  {history.map(item => (
-                    <div key={item.id} className="feed-card">
-                      <div className="feed-body">
-                        <div className="feed-artwork" style={{ width: '120px', height: '120px' }}>
-                          {item.track?.cover_url ? (
-                            <img src={item.track.cover_url} alt="" />
-                          ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-secondary)' }}>
-                              <i className="fas fa-music" style={{ fontSize: '30px', color: 'var(--text-muted)' }}></i>
-                            </div>
-                          )}
-                          <button className="feed-play-btn" onClick={() => handlePlay(item.track)}>
-                            <i className="fas fa-play"></i>
-                          </button>
-                        </div>
-                        <div className="feed-content">
-                          <div className="feed-track-artist">{item.track?.user?.name}</div>
-                          <Link to={`/tracks/${item.track?.id}`} className="feed-track-title">{item.track?.title}</Link>
-                          <div className="feed-waveform"></div>
-                          <div className="feed-actions">
-                            <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                              Played {new Date(item.played_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        {/* LIKED TRACKS */}
+        {activeTab === 'likes' && (
+          <>
+            <div className="lib-hero">
+              <div className="lib-hero-icon"><Heart size={32} /></div>
+              <div>
+                <h2 className="lib-hero-title">Liked Tracks</h2>
+                <p className="lib-hero-count">{likedTracks.length} songs</p>
+              </div>
+              {likedTracks.length > 0 && (
+                <button className="lib-hero-play" onClick={() => handlePlay(likedTracks[0], likedTracks)}>
+                  <Play size={18} style={{ marginLeft: 2 }} />
+                </button>
               )}
             </div>
-          )}
-        </>
-      )}
+            <div className="brw-genres" style={{ marginBottom: 16 }}>
+              {GENRES.map(g => <button key={g.id} className={`brw-genre ${genre === g.id ? 'active' : ''}`} onClick={() => setGenre(g.id)}>{g.label}</button>)}
+            </div>
+            {loading ? <div className="up-empty"><Loader2 size={20} className="up-spin" /> Loading...</div> :
+              (() => { const list = filterByGenre(likedTracks); return list.length ?
+                <div className="up-tracklist">{list.map((t, i) => renderTrackRow(t, i, list))}</div>
+                : <div className="up-empty">No liked tracks{genre !== 'all' ? ' in this category' : ''}</div>
+              })()
+            }
+          </>
+        )}
+
+        {/* REPOSTS */}
+        {activeTab === 'reposts' && (
+          <>
+            <div className="brw-genres" style={{ marginBottom: 16 }}>
+              {GENRES.map(g => <button key={g.id} className={`brw-genre ${genre === g.id ? 'active' : ''}`} onClick={() => setGenre(g.id)}>{g.label}</button>)}
+            </div>
+            {loading ? <div className="up-empty"><Loader2 size={20} className="up-spin" /> Loading...</div> :
+              (() => { const list = filterByGenre(reposts); return list.length ?
+                <div className="up-tracklist">{list.map((t, i) => renderTrackRow(t, i, list))}</div>
+                : <div className="up-empty">No reposts{genre !== 'all' ? ' in this category' : ''}</div>
+              })()
+            }
+          </>
+        )}
+
+        {/* MY UPLOADS */}
+        {activeTab === 'uploads' && (
+          <>
+            <div className="lib-uploads-header">
+              <div className="lib-status-pills">
+                {STATUSES.map(s => (
+                  <button key={s.id} className={`brw-genre ${statusFilter === s.id ? 'active' : ''} ${s.id === 'pending' ? 'lib-pill--orange' : ''} ${s.id === 'rejected' ? 'lib-pill--red' : ''}`}
+                    onClick={() => setStatusFilter(s.id)}>{s.label}</button>
+                ))}
+              </div>
+              <button className="up-showmore" onClick={() => navigate('/upload')}><Upload size={14} /> Upload</button>
+            </div>
+            {loading ? <div className="up-empty"><Loader2 size={20} className="up-spin" /> Loading...</div> :
+              (() => { const list = filterByStatus(myTracks); return list.length ?
+                <div className="up-tracklist">{list.map((t, i) => renderTrackRow(t, i, list, { statusBadge: true, disabled: t.status !== 'approved' }))}</div>
+                : <div className="up-empty">No uploads{statusFilter !== 'all' ? ` with status "${statusFilter}"` : ''}</div>
+              })()
+            }
+          </>
+        )}
+
+        {/* FOLLOWING */}
+        {activeTab === 'following' && (
+          loading ? <div className="up-empty"><Loader2 size={20} className="up-spin" /> Loading...</div> :
+          (() => { const list = filterByName(following); return list.length ? (
+            <div className="brw-artist-grid">
+              {list.map(artist => (
+                <div key={artist.id} className="brw-artist-card" onClick={() => navigate(`/users/${artist.id}`)}>
+                  <div className="brw-artist-avatar">
+                    {(artist.profile?.avatar_url || artist.avatar_url) ? <img src={artist.profile?.avatar_url || artist.avatar_url} alt="" />
+                      : <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--sp-gold)' }}>{(artist.name || '?').charAt(0)}</span>}
+                  </div>
+                  <div className="brw-artist-name">{artist.profile?.display_name || artist.name}</div>
+                  <div className="brw-artist-genre">{artist.tracks_count || 0} tracks</div>
+                </div>
+              ))}
+            </div>
+          ) : <div className="up-empty">Not following anyone yet</div> })()
+        )}
+
+        {/* HISTORY */}
+        {activeTab === 'history' && (
+          <>
+            {history.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                <button className="up-showmore" onClick={handleClearHistory}><Trash2 size={13} /> Clear History</button>
+              </div>
+            )}
+            {loading ? <div className="up-empty"><Loader2 size={20} className="up-spin" /> Loading...</div> :
+              (() => {
+                const list = query.trim() ? history.filter(h => {
+                  const t = h.track || h; return (t.title || '').toLowerCase().includes(query.toLowerCase())
+                }) : history
+                const tracks = list.map(h => h.track || h).filter(Boolean)
+                return tracks.length ?
+                  <div className="up-tracklist">{tracks.map((t, i) => renderTrackRow(t, i, tracks))}</div>
+                  : <div className="up-empty">No listening history</div>
+              })()
+            }
+          </>
+        )}
+      </div>
+
+      {playlistModalTrack && <AddToPlaylistModal track={playlistModalTrack} onClose={() => setPlaylistModalTrack(null)} />}
     </div>
   )
 }

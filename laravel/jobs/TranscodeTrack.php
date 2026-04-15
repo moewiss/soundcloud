@@ -99,10 +99,7 @@ class TranscodeTrack implements ShouldQueue
 
         } catch (\Exception $e) {
             Log::error("Error transcoding track {$track->id}: " . $e->getMessage());
-            
-            // Mark track as rejected on failure
-            $track->update(['status' => 'rejected']);
-            
+            // Transcode failure does not affect track status - track remains approved with original audio
             throw $e;
         }
     }

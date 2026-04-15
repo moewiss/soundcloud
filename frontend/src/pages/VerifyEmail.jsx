@@ -1,205 +1,145 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { api } from '../services/api'
 
 export default function VerifyEmail() {
-  const { token } = useParams()
   const navigate = useNavigate()
-  const [status, setStatus] = useState('verifying') // verifying, success, error
-  const [message, setMessage] = useState('')
-  const [email, setEmail] = useState('')
+  const email = sessionStorage.getItem('pendingEmail') || ''
+  const [digits, setDigits] = useState(['', '', '', '', '', ''])
+  const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+  const inputRefs = useRef([])
 
+  useEffect(() => { if (!email) navigate('/register', { replace: true }) }, [])
   useEffect(() => {
-    if (token) {
-      verifyEmail()
-    }
-  }, [token])
+    if (countdown <= 0) return
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [countdown])
 
-  const verifyEmail = async () => {
-    try {
-      const response = await api.verifyEmail(token)
-      setStatus('success')
-      setMessage(response.message)
-      setEmail(response.email)
-      toast.success('Email verified successfully!')
-      
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/login')
-      }, 3000)
-    } catch (error) {
-      setStatus('error')
-      setMessage(error.response?.data?.message || 'Verification failed. The link may be invalid or expired.')
-      toast.error('Verification failed')
-    }
+  const code = digits.join('')
+
+  const handleDigitChange = (index, value) => {
+    const digit = value.replace(/\D/g, '').slice(-1)
+    const next = [...digits]
+    next[index] = digit
+    setDigits(next)
+    if (digit && index < 5) inputRefs.current[index + 1]?.focus()
+  }
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !digits[index] && index > 0) inputRefs.current[index - 1]?.focus()
+  }
+  const handlePaste = (e) => {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    const next = ['', '', '', '', '', '']
+    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i]
+    setDigits(next)
+    inputRefs.current[Math.min(pasted.length, 5)]?.focus()
   }
 
-  const handleResendVerification = async () => {
-    if (!email) {
-      toast.error('Please enter your email address')
-      return
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (code.length < 6) { toast.error('Please enter the full 6-digit code'); return }
+    setLoading(true)
+    try {
+      const res = await api.verifyEmail({ email, code })
+      localStorage.setItem('token', res.token)
+      localStorage.setItem('user', JSON.stringify(res.user))
+      localStorage.removeItem('is_guest')
+      sessionStorage.removeItem('pendingEmail')
+      if (res.onboarding_state === 'not_started' || res.onboarding_state === 'in_progress') {
+        localStorage.setItem('onboarding_state', res.onboarding_state)
+        toast.success('Email verified! Let\'s set up your feed.')
+        window.location.href = '/onboarding'
+        return
+      }
+      localStorage.setItem('onboarding_state', res.onboarding_state || 'completed')
+      toast.success('Email verified! Welcome to Nashidify')
+      window.location.href = '/'
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Verification failed')
+      setDigits(['', '', '', '', '', ''])
+      inputRefs.current[0]?.focus()
+    } finally { setLoading(false) }
+  }
 
+  const handleResend = async () => {
+    if (countdown > 0) return
     setResending(true)
     try {
       await api.resendVerification(email)
-      toast.success('Verification email sent! Please check your inbox.')
+      toast.success('New code sent! Check your inbox.')
+      setCountdown(60)
+      setDigits(['', '', '', '', '', ''])
+      inputRefs.current[0]?.focus()
     } catch (error) {
-      toast.error('Failed to resend verification email')
-    } finally {
-      setResending(false)
-    }
+      toast.error(error.response?.data?.message || 'Failed to resend code')
+    } finally { setResending(false) }
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        {/* Left Side - Branding */}
-        <div className="auth-branding">
-          <div className="branding-content">
-            <div className="brand-logo">
-              <i className="fas fa-mosque"></i>
-            </div>
-            <h1>Islamic Soundcloud</h1>
-            <p>Listen to Quran, Nasheeds, and Islamic content from around the world</p>
-            
-            <div className="features-list">
-              <div className="feature-item">
-                <i className="fas fa-check-circle"></i>
-                <span>High quality audio</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check-circle"></i>
-                <span>Verified reciters & scholars</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-check-circle"></i>
-                <span>Ad-free experience</span>
-              </div>
-            </div>
+    <div className="sp-auth-page">
+      <div className="sp-auth-glow" />
+      <div className="sp-auth-container">
+        <div className="sp-auth-logo">
+          <div className="sp-auth-logo-wrap">
+            <img src="/logo.png" alt="Nashidify" className="sp-auth-logo-img" />
+            <div className="sp-auth-logo-ring" />
           </div>
         </div>
 
-        {/* Right Side - Verification Status */}
-        <div className="auth-form-section">
-          <div className="auth-form-container">
-            {status === 'verifying' && (
-              <>
-                <div className="auth-header">
-                  <div className="icon-header">
-                    <i className="fas fa-spinner fa-spin" style={{ fontSize: '3rem', color: '#FF5500' }}></i>
-                  </div>
-                  <h2>Verifying Your Email</h2>
-                  <p>Please wait while we verify your email address...</p>
-                </div>
-              </>
-            )}
-
-            {status === 'success' && (
-              <>
-                <div className="auth-header">
-                  <div className="icon-header">
-                    <i className="fas fa-check-circle" style={{ fontSize: '3rem', color: '#10b981' }}></i>
-                  </div>
-                  <h2>Email Verified!</h2>
-                  <p>{message}</p>
-                </div>
-
-                <div style={{ 
-                  backgroundColor: '#d1fae5', 
-                  padding: '20px', 
-                  borderRadius: '8px',
-                  border: '1px solid #10b981',
-                  marginTop: '20px',
-                  textAlign: 'center'
-                }}>
-                  <p style={{ margin: 0, color: '#065f46' }}>
-                    <i className="fas fa-info-circle"></i> Redirecting to login page in 3 seconds...
-                  </p>
-                </div>
-
-                <div className="auth-switch" style={{ marginTop: '30px' }}>
-                  <Link to="/login" className="btn btn-primary btn-block">
-                    <i className="fas fa-sign-in-alt"></i>
-                    Go to Login
-                  </Link>
-                </div>
-              </>
-            )}
-
-            {status === 'error' && (
-              <>
-                <div className="auth-header">
-                  <div className="icon-header">
-                    <i className="fas fa-times-circle" style={{ fontSize: '3rem', color: '#ef4444' }}></i>
-                  </div>
-                  <h2>Verification Failed</h2>
-                  <p style={{ color: '#ef4444' }}>{message}</p>
-                </div>
-
-                <div style={{ 
-                  backgroundColor: '#fee2e2', 
-                  padding: '20px', 
-                  borderRadius: '8px',
-                  border: '1px solid #ef4444',
-                  marginTop: '20px'
-                }}>
-                  <p style={{ margin: '0 0 15px 0', color: '#991b1b', fontWeight: '600' }}>
-                    <i className="fas fa-exclamation-triangle"></i> What to do next:
-                  </p>
-                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#991b1b' }}>
-                    <li>Check if you clicked an old or expired link</li>
-                    <li>Request a new verification email below</li>
-                    <li>Make sure you're using the latest email we sent</li>
-                  </ul>
-                </div>
-
-                <form onSubmit={(e) => { e.preventDefault(); handleResendVerification(); }} className="auth-form" style={{ marginTop: '30px' }}>
-                  <div className="form-group">
-                    <label htmlFor="email">
-                      <i className="fas fa-envelope"></i>
-                      Email Address
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={resending}
-                    />
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-block" disabled={resending}>
-                    {resending ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin"></i>
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-paper-plane"></i>
-                        Resend Verification Email
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                <div className="auth-switch" style={{ marginTop: '20px' }}>
-                  <Link to="/login" className="back-link">
-                    <i className="fas fa-arrow-left"></i>
-                    Back to Login
-                  </Link>
-                </div>
-              </>
-            )}
+        <div className="sp-auth-heading">
+          <div style={{ fontSize: '2.2rem', marginBottom: '12px' }}>
+            <i className="fas fa-envelope-open-text" style={{ color: 'var(--sp-gold)' }}></i>
           </div>
+          <h2>Verify your email</h2>
+          <p>We sent a 6-digit code to</p>
+          <p style={{ color: 'var(--sp-green)', fontWeight: 600, fontSize: '0.95rem', marginTop: '4px' }}>{email}</p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="sp-auth-otp">
+            {digits.map((d, i) => (
+              <input
+                key={i}
+                ref={el => inputRefs.current[i] = el}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={d}
+                onChange={e => handleDigitChange(i, e.target.value)}
+                onKeyDown={e => handleKeyDown(i, e)}
+                onPaste={i === 0 ? handlePaste : undefined}
+                disabled={loading}
+              />
+            ))}
+          </div>
+
+          <button type="submit" className="sp-auth-submit" disabled={loading || code.length < 6}>
+            {loading ? <><i className="fas fa-spinner fa-spin"></i> Verifying...</> : 'Verify Code'}
+          </button>
+        </form>
+
+        <div style={{ textAlign: 'center', marginTop: '22px' }}>
+          <p style={{ color: 'var(--sp-text-sub)', fontSize: '0.82rem', marginBottom: '10px' }}>
+            Didn't receive it? Check your spam folder, or
+          </p>
+          <button onClick={handleResend} disabled={resending || countdown > 0} className="sp-auth-resend">
+            {resending
+              ? <><i className="fas fa-spinner fa-spin"></i> Sending...</>
+              : countdown > 0
+                ? `Resend in ${countdown}s`
+                : 'Resend code'}
+          </button>
+        </div>
+
+        <div className="sp-auth-footer">
+          <Link to="/login"><i className="fas fa-arrow-left" style={{ marginRight: '6px' }}></i> Back to login</Link>
         </div>
       </div>
     </div>
   )
 }
-

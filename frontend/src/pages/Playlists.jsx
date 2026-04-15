@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { usePlayer } from '../context/PlayerContext'
 import { api } from '../services/api'
+import { copyToClipboard } from '../utils/clipboard'
 
 export default function Playlists() {
   const [playlists, setPlaylists] = useState([])
@@ -53,7 +54,7 @@ export default function Playlists() {
       toast.success('Playlist deleted')
       fetchPlaylists()
     } catch (error) {
-      toast.error('Failed')
+      toast.error('Failed to delete playlist')
     }
   }
 
@@ -65,63 +66,50 @@ export default function Playlists() {
 
   if (loading) {
     return (
-      <div className="page">
-        <div className="loading-state">
-          <i className="fas fa-spinner fa-spin"></i>
-          <p>Loading playlists...</p>
+      <div style={{ padding: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <div style={{ textAlign: 'center', color: 'var(--sp-text-sub)' }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', marginBottom: '12px', display: 'block' }}></i>
+          Loading playlists...
         </div>
       </div>
     )
   }
 
   return (
-    <div className="page">
+    <div style={{ padding: '32px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
         <div>
-          <h1 style={{ fontSize: '28px', marginBottom: '5px', color: 'var(--text-primary)' }}>Playlists</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Your curated collections</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--sp-white)', marginBottom: '4px' }}>
+            Playlists
+          </h1>
+          <p style={{ color: 'var(--sp-text-sub)', fontSize: '14px', fontWeight: 500, letterSpacing: '-0.01em' }}>Your curated collections</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-          <i className="fas fa-plus"></i> Create Playlist
+        <button className="sp-btn sp-btn-primary" onClick={() => setShowCreate(true)}>
+          <i className="fas fa-plus" style={{ marginRight: '6px' }}></i> Create Playlist
         </button>
       </div>
 
       {/* Create Playlist Modal */}
       {showCreate && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: 'var(--bg-white)',
-            padding: '30px',
-            borderRadius: 'var(--radius-lg)',
-            width: '100%',
-            maxWidth: '500px',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '20px', color: 'var(--text-primary)' }}>Create New Playlist</h2>
+        <div className="sp-modal-overlay" onClick={() => setShowCreate(false)}>
+          <div className="sp-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', borderRadius: '20px' }}>
+            <div className="sp-modal-header">
+              <h2 className="sp-modal-title">Create New Playlist</h2>
               <button
                 onClick={() => setShowCreate(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '20px' }}
+                className="sp-btn-icon"
               >
                 <i className="fas fa-times"></i>
               </button>
             </div>
 
             <form onSubmit={handleCreatePlaylist}>
-              <div className="form-group">
-                <label className="form-label">Playlist Title *</label>
+              <div className="sp-form-group">
+                <label className="sp-form-label">Playlist Title *</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className="sp-form-input"
                   value={newPlaylist.name}
                   onChange={(e) => setNewPlaylist({ ...newPlaylist, name: e.target.value })}
                   placeholder="Give your playlist a name"
@@ -129,10 +117,10 @@ export default function Playlists() {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Description (optional)</label>
+              <div className="sp-form-group">
+                <label className="sp-form-label">Description (optional)</label>
                 <textarea
-                  className="form-textarea"
+                  className="sp-form-textarea"
                   value={newPlaylist.description}
                   onChange={(e) => setNewPlaylist({ ...newPlaylist, description: e.target.value })}
                   placeholder="Add an optional description"
@@ -140,11 +128,11 @@ export default function Playlists() {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn" onClick={() => setShowCreate(false)}>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" className="sp-btn sp-btn-ghost" onClick={() => setShowCreate(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="sp-btn sp-btn-primary">
                   Create
                 </button>
               </div>
@@ -155,102 +143,65 @@ export default function Playlists() {
 
       {/* Playlists Grid */}
       {playlists.length === 0 ? (
-        <div className="empty-state">
-          <i className="fas fa-list"></i>
-          <h3>No playlists yet</h3>
-          <p>Create your first playlist to organize your favorite tracks</p>
-          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-            <i className="fas fa-plus"></i> Create Playlist
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <i className="fas fa-list" style={{ fontSize: '48px', color: 'var(--sp-text-muted)', marginBottom: '16px', display: 'block' }}></i>
+          <h3 style={{ color: 'var(--sp-white)', fontSize: '18px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.01em' }}>No playlists yet</h3>
+          <p style={{ color: 'var(--sp-text-sub)', fontSize: '14px', marginBottom: '20px', fontWeight: 500, letterSpacing: '-0.01em' }}>
+            Create your first playlist to organize your favorite tracks
+          </p>
+          <button className="sp-btn sp-btn-primary" onClick={() => setShowCreate(true)}>
+            <i className="fas fa-plus" style={{ marginRight: '6px' }}></i> Create Playlist
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+        <div className="sp-card-grid">
           {playlists.map(playlist => (
             <div
               key={playlist.id}
-              style={{
-                background: 'var(--bg-white)',
-                borderRadius: 'var(--radius-lg)',
-                overflow: 'hidden',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                cursor: 'pointer',
-                border: '1px solid var(--border-light)'
-              }}
+              className="sp-card"
               onClick={() => navigate(`/playlists/${playlist.id}`)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
             >
               {/* Cover */}
-              <div style={{
-                height: '200px',
-                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div className="sp-card-img">
                 {playlist.cover_url ? (
-                  <img src={playlist.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={playlist.cover_url} alt={playlist.name} />
                 ) : (
-                  <i className="fas fa-music" style={{ fontSize: '60px', opacity: 0.5, color: 'white' }}></i>
+                  <i className="fas fa-music"></i>
                 )}
-
-                {/* Play Button */}
                 <button
-                  onClick={(e) => { e.stopPropagation(); handlePlayPlaylist(playlist); }}
-                  style={{
-                    position: 'absolute',
-                    bottom: '15px',
-                    right: '15px',
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    background: 'var(--primary)',
-                    border: 'none',
-                    color: 'white',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '18px',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-                  }}
+                  className="sp-card-play"
+                  onClick={(e) => { e.stopPropagation(); handlePlayPlaylist(playlist) }}
                 >
-                  <i className="fas fa-play" style={{ marginLeft: '2px' }}></i>
+                  <i className="fas fa-play"></i>
                 </button>
               </div>
 
               {/* Info */}
-              <div style={{ padding: '15px' }}>
-                <h3 style={{ fontSize: '15px', marginBottom: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
-                  {playlist.name}
-                </h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '10px' }}>
-                  {playlist.tracks_count || 0} tracks
-                </p>
+              <div className="sp-card-title">{playlist.name}</div>
+              <div className="sp-card-sub">
+                {playlist.tracks_count || 0} tracks
+              </div>
 
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="action-btn" onClick={(e) => { e.stopPropagation(); }}>
-                    <i className="fas fa-heart"></i>
-                  </button>
-                  <button className="action-btn" onClick={(e) => { e.stopPropagation(); }}>
-                    <i className="fas fa-share"></i>
-                  </button>
-                  <button 
-                    className="action-btn" 
-                    onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(playlist.id); }}
-                    style={{ marginLeft: 'auto' }}
-                  >
-                    <i className="fas fa-trash"></i>
-                  </button>
-                </div>
+              {/* Delete action */}
+              <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                <button
+                  className="sp-btn-icon"
+                  style={{ fontSize: '12px' }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    copyToClipboard(`${window.location.origin}/playlists/${playlist.id}`)
+                    toast.success('Link copied!')
+                  }}
+                >
+                  <i className="fas fa-share"></i>
+                </button>
+                <button
+                  className="sp-btn-icon"
+                  style={{ fontSize: '12px' }}
+                  onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(playlist.id) }}
+                >
+                  <i className="fas fa-trash"></i>
+                </button>
               </div>
             </div>
           ))}

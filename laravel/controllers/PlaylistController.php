@@ -22,18 +22,78 @@ class PlaylistController extends Controller
 
     public function show(Playlist $playlist)
     {
-        if (!$playlist->is_public && $playlist->user_id !== auth()->id()) {
+        if (!$playlist->is_public && (!auth()->check() || $playlist->user_id !== auth()->id())) {
             abort(403);
         }
 
-        $playlist->load(['tracks.user.profile', 'user']);
-        $playlist->loadCount('tracks');
+        // Resolve auth from bearer token on public route
+        if (!auth()->check() && request()->bearerToken()) {
+            $token = \Laravel\Sanctum\PersonalAccessToken::findToken(request()->bearerToken());
+            if ($token) auth()->setUser($token->tokenable);
+        }
 
-        return response()->json($playlist);
+        $playlist->load(['tracks.user.profile', 'user.profile']);
+        $playlist->loadCount(['tracks', 'likedByUsers as likes_count', 'repostedByUsers as reposts_count']);
+
+        $data = $playlist->toArray();
+        $data['likes_count'] = $playlist->likes_count ?? 0;
+        $data['reposts_count'] = $playlist->reposts_count ?? 0;
+        $data['is_liked'] = auth()->check() ? auth()->user()->hasLikedPlaylist($playlist) : false;
+        $data['is_reposted'] = auth()->check() ? auth()->user()->hasRepostedPlaylist($playlist) : false;
+
+        return response()->json($data);
+    }
+
+    public function toggleLike(Playlist $playlist)
+    {
+        $user = auth()->user();
+        $exists = $user->likedPlaylists()->where('playlist_id', $playlist->id)->exists();
+
+        if ($exists) {
+            $user->likedPlaylists()->detach($playlist->id);
+        } else {
+            $user->likedPlaylists()->attach($playlist->id);
+        }
+
+        return response()->json([
+            'is_liked' => !$exists,
+            'likes_count' => $playlist->likedByUsers()->count(),
+        ]);
+    }
+
+    public function toggleRepost(Playlist $playlist)
+    {
+        $user = auth()->user();
+        $exists = $user->repostedPlaylists()->where('playlist_id', $playlist->id)->exists();
+
+        if ($exists) {
+            $user->repostedPlaylists()->detach($playlist->id);
+        } else {
+            $user->repostedPlaylists()->attach($playlist->id);
+        }
+
+        return response()->json([
+            'is_reposted' => !$exists,
+            'reposts_count' => $playlist->repostedByUsers()->count(),
+        ]);
     }
 
     public function store(Request $request)
     {
+        $user = $request->user();
+        $planService = app(\App\Services\PlanFeatureService::class)->forUser($user);
+        $limit = $planService->playlistLimit();
+
+        if ($limit !== null) {
+            $currentCount = $user->playlists()->count();
+            if ($currentCount >= $limit) {
+                return response()->json([
+                    'message' => "Playlist limit reached ({$limit}). Upgrade your plan for unlimited playlists.",
+                    'limit' => $limit,
+                ], 403);
+            }
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
@@ -85,6 +145,15 @@ class PlaylistController extends Controller
             abort(403);
         }
 
+        $planService = app(\App\Services\PlanFeatureService::class)->forUser($request->user());
+        $trackLimit = $planService->playlistTrackLimit();
+        if ($trackLimit !== null && $playlist->tracks()->count() >= $trackLimit) {
+            return response()->json([
+                'message' => "Track limit per playlist reached ({$trackLimit}). Upgrade for unlimited.",
+                'limit' => $trackLimit,
+            ], 403);
+        }
+
         $validated = $request->validate([
             'track_id' => 'required|exists:tracks,id',
         ]);
@@ -116,13 +185,46 @@ class PlaylistController extends Controller
         return response()->json(['message' => 'Track removed from playlist']);
     }
 
+    public function reorderTracks(Request $request, Playlist $playlist)
+    {
+        if ($playlist->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'track_ids' => 'required|array',
+            'track_ids.*' => 'integer',
+        ]);
+
+        foreach ($request->track_ids as $position => $trackId) {
+            $playlist->tracks()->updateExistingPivot($trackId, ['position' => $position]);
+        }
+
+        return response()->json(['message' => 'Tracks reordered']);
+    }
+
     public function userPlaylists($id)
     {
         $playlists = Playlist::where('user_id', $id)
             ->where('is_public', true)
-            ->withCount('tracks')
+            ->withCount(['tracks', 'likedByUsers as likes_count', 'repostedByUsers as reposts_count'])
+            ->with(['tracks' => function ($q) {
+                $q->orderBy('playlist_track.position');
+            }])
             ->latest()
-            ->get();
+            ->get()
+            ->map(function ($pl) {
+                $data = $pl->toArray();
+                // Build preview covers from first 4 tracks
+                $data['preview_covers'] = collect($pl->tracks)
+                    ->take(4)
+                    ->map(fn($t) => $t->cover_url)
+                    ->filter()
+                    ->values()
+                    ->toArray();
+                unset($data['tracks']);
+                return $data;
+            });
 
         return response()->json($playlists);
     }

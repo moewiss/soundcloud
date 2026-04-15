@@ -1,0 +1,27 @@
+{
+  "name": "Nashidify",
+  "short_name": "Nashidify",
+  "description": "Islamic Music Streaming - Nasheeds, Quran, Duas & more",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a1510",
+  "theme_color": "#0a1510",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["music", "entertainment"],
+  "lang": "en",
+  "dir": "ltr"
+}

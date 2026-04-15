@@ -16,6 +16,11 @@ class Profile extends Model
         'bio',
         'avatar_path',
         'header_path',
+        'is_founder',
+    ];
+
+    protected $casts = [
+        'is_founder' => 'boolean',
     ];
 
     public function user(): BelongsTo

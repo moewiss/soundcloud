@@ -53,99 +53,93 @@ export default function AddToPlaylistModal({ trackId, onClose }) {
   }
 
   return (
-    <div 
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10000
-      }}
-      onClick={onClose}
-    >
-      <div 
-        style={{
-          background: 'var(--bg-card)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '24px',
-          maxWidth: '400px',
-          width: '90%',
-          maxHeight: '80vh',
-          overflow: 'auto'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Add to Playlist</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)'
-            }}
-          >
-            ×
+    <div className="sp-modal-overlay" onClick={onClose}>
+      <div className="sp-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+        <div className="sp-modal-header">
+          <h2 className="sp-modal-title">Add to Playlist</h2>
+          <button className="sp-btn-icon" onClick={onClose} style={{ borderRadius: '50%', background: 'rgba(142,142,147,0.1)', border: 'none' }}>
+            <i className="fas fa-times"></i>
           </button>
         </div>
 
         {!showCreateForm ? (
           <>
+            {/* Create New Playlist Button */}
             <button
               onClick={() => setShowCreateForm(true)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: 'var(--primary)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                marginBottom: '16px'
-              }}
+              className="sp-btn sp-btn-primary"
+              style={{ width: '100%', marginBottom: '16px', justifyContent: 'center' }}
             >
-              <i className="fas fa-plus"></i> Create New Playlist
+              <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
+              Create New Playlist
             </button>
 
+            {/* Playlist List */}
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', color: 'var(--primary)' }}></i>
+              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--sp-text-sub)' }}>
+                <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', marginBottom: '8px', display: 'block' }}></i>
+                Loading playlists...
               </div>
             ) : playlists.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
-                No playlists yet. Create one!
+              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--sp-text-muted)', fontSize: '14px' }}>
+                No playlists yet. Create one above!
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '320px', overflowY: 'auto' }}>
                 {playlists.map(playlist => (
                   <button
                     key={playlist.id}
                     onClick={() => handleAddToPlaylist(playlist.id)}
                     style={{
-                      padding: '12px 16px',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-light)',
-                      borderRadius: 'var(--radius-sm)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '0.5px solid rgba(60,60,67,0.06)',
+                      borderRadius: '6px',
                       cursor: 'pointer',
                       textAlign: 'left',
-                      transition: 'all 0.2s'
+                      transition: 'background 0.2s',
+                      width: '100%',
+                      color: 'var(--sp-white)'
                     }}
-                    onMouseEnter={(e) => e.target.style.background = 'var(--primary-soft)'}
-                    onMouseLeave={(e) => e.target.style.background = 'var(--bg-secondary)'}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--sp-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    <div style={{ fontWeight: '500', marginBottom: '4px' }}>{playlist.name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {playlist.tracks_count || 0} tracks
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '4px',
+                      background: 'var(--sp-bg-highlight)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {playlist.cover_url ? (
+                        <img src={playlist.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                      ) : (
+                        <i className="fas fa-music" style={{ color: 'var(--sp-text-muted)', fontSize: '14px' }}></i>
+                      )}
                     </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        marginBottom: '2px'
+                      }}>
+                        {playlist.name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--sp-text-muted)' }}>
+                        {playlist.tracks_count || 0} tracks
+                      </div>
+                    </div>
+                    <i className="fas fa-plus" style={{ color: 'var(--sp-text-muted)', fontSize: '12px' }}></i>
                   </button>
                 ))}
               </div>
@@ -153,53 +147,37 @@ export default function AddToPlaylistModal({ trackId, onClose }) {
           </>
         ) : (
           <form onSubmit={handleCreateAndAdd}>
-            <input
-              type="text"
-              value={newPlaylistName}
-              onChange={(e) => setNewPlaylistName(e.target.value)}
-              placeholder="Playlist name"
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid var(--border-light)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '14px',
-                marginBottom: '12px'
-              }}
-            />
+            <div className="sp-form-group">
+              <label className="sp-form-label">Playlist name</label>
+              <input
+                type="text"
+                className="sp-form-input"
+                value={newPlaylistName}
+                onChange={(e) => setNewPlaylistName(e.target.value)}
+                placeholder="Enter playlist name"
+                autoFocus
+              />
+            </div>
+
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
                 type="submit"
+                className="sp-btn sp-btn-primary"
                 disabled={creating || !newPlaylistName.trim()}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: 'var(--primary)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: creating ? 'wait' : 'pointer',
-                  opacity: creating || !newPlaylistName.trim() ? 0.5 : 1
-                }}
+                style={{ flex: 1, justifyContent: 'center' }}
               >
-                {creating ? 'Creating...' : 'Create & Add'}
+                {creating ? (
+                  <><i className="fas fa-spinner fa-spin"></i> Creating...</>
+                ) : (
+                  'Create & Add'
+                )}
               </button>
               <button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
-                style={{
-                  padding: '12px 20px',
-                  background: 'var(--bg-secondary)',
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '14px',
-                  cursor: 'pointer'
-                }}
+                className="sp-btn sp-btn-ghost"
+                onClick={() => { setShowCreateForm(false); setNewPlaylistName('') }}
               >
-                Cancel
+                Back
               </button>
             </div>
           </form>
@@ -208,4 +186,3 @@ export default function AddToPlaylistModal({ trackId, onClose }) {
     </div>
   )
 }
-

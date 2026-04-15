@@ -40,7 +40,7 @@ class AdminController extends Controller
         if ($request->filter === 'banned') {
             $query->whereNotNull('banned_at');
         } elseif ($request->filter === 'active') {
-            $query->whereNull('banned_at');
+            $query->where('last_seen_at', '>=', now()->subMinutes(15));
         } elseif ($request->filter === 'admin') {
             $query->where('is_admin', true);
         }
@@ -58,6 +58,8 @@ class AdminController extends Controller
                 'is_banned' => !is_null($user->banned_at),
                 'banned_at' => $user->banned_at,
                 'created_at' => $user->created_at,
+                'last_seen_at' => $user->last_seen_at,
+                'is_online' => $user->last_seen_at && \Carbon\Carbon::parse($user->last_seen_at)->gte(now()->subMinutes(15)),
                 'tracks_count' => $user->tracks()->count(),
                 'avatar_url' => $user->profile->avatar_url ?? null,
                 'display_name' => $user->profile->display_name ?? $user->name,
@@ -357,8 +359,34 @@ class AdminController extends Controller
         $this->checkAdmin();
         $comment = Comment::findOrFail($id);
         $comment->delete();
-        
+
         return response()->json(['message' => 'Comment deleted successfully']);
+    }
+
+    public function getActiveUsers()
+    {
+        $this->checkAdmin();
+
+        $activeUsers = User::with('profile')
+            ->whereNotNull('last_seen_at')
+            ->where('last_seen_at', '>=', now()->subMinutes(15))
+            ->orderByDesc('last_seen_at')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->profile->display_name ?? $user->name,
+                    'email' => $user->email,
+                    'avatar_url' => $user->profile->avatar_url ?? null,
+                    'last_seen_at' => $user->last_seen_at,
+                    'is_admin' => $user->is_admin,
+                ];
+            });
+
+        return response()->json([
+            'active_users' => $activeUsers,
+            'count' => $activeUsers->count(),
+        ]);
     }
 }
 

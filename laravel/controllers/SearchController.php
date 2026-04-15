@@ -3,109 +3,95 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Track;
-use App\Models\User;
+use App\Services\SearchPageService;
 use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
-    public function search(Request $request)
+    /**
+     * Browse state — categories, moods, trending searches, charts, for-you.
+     */
+    public function browse(Request $request, SearchPageService $service)
+    {
+        return response()->json($service->getBrowseData($request->user()));
+    }
+
+    /**
+     * Enhanced search with relevance scoring and server-side filters.
+     */
+    public function search(Request $request, SearchPageService $service)
     {
         $query = $request->input('q', '');
-        $filter = $request->input('filter', 'everything');
+        $filters = [
+            'filter' => $request->input('filter', 'everything'),
+            'duration' => $request->input('duration'),
+            'category' => $request->input('category'),
+            'sort' => $request->input('sort', 'relevant'),
+        ];
 
-        $results = [];
-
-        // If filter is "people" and no query, show all users
-        if ($filter === 'people' && empty($query)) {
-            $results['users'] = User::with('profile')
-                ->withCount('tracks')
-                ->orderBy('created_at', 'desc')
-                ->limit(50)
-                ->get();
-            $results['tracks'] = [];
-            $results['playlists'] = [];
-            return response()->json($results);
-        }
-
-        // If filter is "playlists" and no query, show all playlists
-        if ($filter === 'playlists' && empty($query)) {
-            $results['playlists'] = \App\Models\Playlist::with(['user.profile'])
-                ->withCount('tracks')
-                ->orderBy('created_at', 'desc')
-                ->limit(50)
-                ->get();
-            $results['tracks'] = [];
-            $results['users'] = [];
-            return response()->json($results);
-        }
-
+        // Handle empty query cases for people/playlists browsing
         if (empty($query)) {
-            return response()->json([
-                'tracks' => [],
-                'users' => [],
-                'playlists' => [],
-            ]);
+            if ($filters['filter'] === 'people') {
+                $users = \App\Models\User::with('profile')
+                    ->withCount('tracks')
+                    ->whereNull('deleted_at')
+                    ->whereNull('banned_at')
+                    ->orderByDesc('created_at')
+                    ->limit(50)
+                    ->get();
+                return response()->json(['tracks' => [], 'users' => $users, 'playlists' => []]);
+            }
+            if ($filters['filter'] === 'playlists') {
+                $playlists = \App\Models\Playlist::with(['user.profile'])
+                    ->withCount('tracks')
+                    ->orderByDesc('created_at')
+                    ->limit(50)
+                    ->get();
+                return response()->json(['tracks' => [], 'users' => [], 'playlists' => $playlists]);
+            }
+            return response()->json(['tracks' => [], 'users' => [], 'playlists' => []]);
         }
 
-        // Fuzzy search with LIKE and wildcards for typo tolerance
-        if ($filter === 'everything' || $filter === 'tracks') {
-            // Split query into words for better fuzzy matching
-            $words = explode(' ', $query);
-            $results['tracks'] = Track::approved()
-                ->where(function ($q) use ($query, $words) {
-                    $q->where('title', 'like', "%{$query}%")
-                        ->orWhere('description', 'like', "%{$query}%");
-                    // Also search for individual words (fuzzy)
-                    foreach ($words as $word) {
-                        if (strlen($word) > 2) {
-                            $q->orWhere('title', 'like', "%{$word}%");
-                        }
-                    }
-                })
-                ->with(['user.profile'])
-                ->withCount(['likes', 'comments'])
-                ->limit(20)
-                ->get();
+        return response()->json($service->search($query, $filters, $request->user()));
+    }
+
+    /**
+     * AI-powered search (called asynchronously by frontend).
+     */
+    public function aiSearch(Request $request, SearchPageService $service)
+    {
+        $query = $request->input('q', '');
+        if (strlen($query) < 3) {
+            return response()->json(['intent' => null, 'tracks' => [], 'suggestion' => null]);
         }
 
-        if ($filter === 'everything' || $filter === 'people' || $filter === 'users') {
-            $words = explode(' ', $query);
-            $results['users'] = User::where(function ($q) use ($query, $words) {
-                $q->where('name', 'like', "%{$query}%")
-                    ->orWhere('email', 'like', "%{$query}%");
-                // Fuzzy match on individual words
-                foreach ($words as $word) {
-                    if (strlen($word) > 2) {
-                        $q->orWhere('name', 'like', "%{$word}%");
-                    }
-                }
-            })
-            ->with('profile')
-            ->withCount('tracks')
-            ->limit(20)
-            ->get();
-        }
+        return response()->json($service->getAISearchResults($query));
+    }
 
-        if ($filter === 'everything' || $filter === 'playlists') {
-            $words = explode(' ', $query);
-            $results['playlists'] = \App\Models\Playlist::where(function ($q) use ($query, $words) {
-                $q->where('name', 'like', "%{$query}%")
-                    ->orWhere('description', 'like', "%{$query}%");
-                // Fuzzy match on individual words
-                foreach ($words as $word) {
-                    if (strlen($word) > 2) {
-                        $q->orWhere('name', 'like', "%{$word}%");
-                    }
-                }
-            })
-            ->with(['user.profile'])
-            ->withCount('tracks')
-            ->limit(20)
-            ->get();
-        }
+    /**
+     * Autocomplete suggestions.
+     */
+    public function suggestions(Request $request, SearchPageService $service)
+    {
+        $prefix = $request->input('q', '');
+        return response()->json(['suggestions' => $service->getSuggestions($prefix)]);
+    }
 
-        return response()->json($results);
+    /**
+     * Clear all search history.
+     */
+    public function clearHistory(Request $request, SearchPageService $service)
+    {
+        $service->clearSearchHistory($request->user()->id);
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Remove a single search history item.
+     */
+    public function removeHistoryItem(Request $request, SearchPageService $service, $id)
+    {
+        $service->removeSearchHistoryItem($request->user()->id, $id);
+        return response()->json(['ok' => true]);
     }
 }
-

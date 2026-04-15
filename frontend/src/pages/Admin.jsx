@@ -9,6 +9,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 })
+  const [activeUsers, setActiveUsers] = useState([])
+  const [showActiveUsers, setShowActiveUsers] = useState(false)
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   useEffect(() => {
@@ -21,6 +23,9 @@ export default function Admin() {
     
     fetchTracks()
     fetchStats()
+    fetchActiveUsers()
+    const interval = setInterval(fetchActiveUsers, 30000)
+    return () => clearInterval(interval)
   }, [filter])
 
   const fetchTracks = async () => {
@@ -38,6 +43,15 @@ export default function Admin() {
       toast.error('Failed to load tracks')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchActiveUsers = async () => {
+    try {
+      const data = await api.getActiveUsers()
+      setActiveUsers(data.active_users || [])
+    } catch (error) {
+      console.error('Error fetching active users:', error)
     }
   }
 
@@ -124,7 +138,7 @@ export default function Admin() {
         {/* Stats Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
           <div style={{
-            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+            background: 'linear-gradient(135deg, #FF9500 0%, #E68600 100%)',
             borderRadius: '16px',
             padding: '24px',
             color: 'white',
@@ -158,7 +172,7 @@ export default function Admin() {
           </div>
 
           <div style={{
-            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+            background: 'linear-gradient(135deg, #FF3B30 0%, #CC2D24 100%)',
             borderRadius: '16px',
             padding: '24px',
             color: 'white',
@@ -190,7 +204,86 @@ export default function Admin() {
             <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>📊 Total Tracks</div>
             <div style={{ fontSize: '36px', fontWeight: '700' }}>{stats.pending + stats.approved + stats.rejected}</div>
           </div>
+
+          <div style={{
+            background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+            borderRadius: '16px',
+            padding: '24px',
+            color: 'white',
+            cursor: 'pointer',
+            transition: 'transform 0.2s',
+            border: showActiveUsers ? '3px solid white' : 'none'
+          }}
+          onClick={() => setShowActiveUsers(v => !v)}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>🟢 Active Now</div>
+            <div style={{ fontSize: '36px', fontWeight: '700' }}>{activeUsers.length}</div>
+            <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '4px' }}>last 15 min</div>
+          </div>
         </div>
+
+        {/* Active Users Panel */}
+        {showActiveUsers && (
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: '16px',
+            padding: '24px',
+            marginBottom: '24px',
+            border: '1px solid var(--border-light)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: '#1A7050' }}></span>
+                Currently Active Users
+              </h3>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Active in the last 15 minutes · refreshes every 30s</span>
+            </div>
+            {activeUsers.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>No users active right now</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {activeUsers.map(u => (
+                  <div key={u.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    background: 'var(--bg-primary)',
+                    borderRadius: '10px',
+                  }}>
+                    <div style={{
+                      width: '38px', height: '38px', borderRadius: '50%',
+                      background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, overflow: 'hidden', position: 'relative'
+                    }}>
+                      {u.avatar_url
+                        ? <img src={u.avatar_url} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <i className="fas fa-user" style={{ color: 'white', fontSize: '16px' }}></i>
+                      }
+                      <span style={{
+                        position: 'absolute', bottom: '1px', right: '1px',
+                        width: '9px', height: '9px', borderRadius: '50%',
+                        background: '#1A7050', border: 'none'
+                      }}></span>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>
+                        {u.name} {u.is_admin && <span style={{ fontSize: '11px', background: 'var(--primary-soft)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '6px', marginLeft: '4px' }}>Admin</span>}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{u.email}</div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {Math.floor((Date.now() - new Date(u.last_seen_at)) / 60000)} min ago
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Filter Info */}
         <div style={{ 
@@ -299,8 +392,8 @@ export default function Admin() {
                           'rgba(245, 158, 11, 0.1)',
                         color:
                           track.status === 'approved' ? '#10b981' :
-                          track.status === 'rejected' ? '#ef4444' :
-                          '#f59e0b'
+                          track.status === 'rejected' ? '#FF3B30' :
+                          '#FF9500'
                       }}>
                         {track.status === 'approved' && '✅ Approved'}
                         {track.status === 'rejected' && '❌ Rejected'}
@@ -367,7 +460,7 @@ export default function Admin() {
                           className="btn"
                           onClick={() => handleReject(track.id)}
                           style={{
-                            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            background: 'linear-gradient(135deg, #FF3B30 0%, #CC2D24 100%)',
                             color: 'white',
                             border: 'none',
                             padding: '10px 24px',
@@ -395,7 +488,7 @@ export default function Admin() {
                           className="btn"
                           onClick={() => handleDelete(track.id)}
                           style={{
-                            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            background: 'linear-gradient(135deg, #FF3B30 0%, #CC2D24 100%)',
                             color: 'white',
                             border: 'none',
                             padding: '10px 24px',
@@ -428,7 +521,7 @@ export default function Admin() {
                           className="btn"
                           onClick={() => handleDelete(track.id)}
                           style={{
-                            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            background: 'linear-gradient(135deg, #FF3B30 0%, #CC2D24 100%)',
                             color: 'white',
                             border: 'none',
                             padding: '10px 20px',

@@ -2,13 +2,15 @@ version: '3.8'
 
 services:
   app:
-    image: serversideup/php:8.4-fpm-nginx
+    build:
+      context: .
+      dockerfile: Dockerfile.app
     container_name: sc_app
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY}
-      APP_URL: ${APP_URL:-http://185.250.36.33}
+      APP_KEY: "base64:ktpbeVeWOEssf93G3o8wfk2y6nhC4/BKaxUlQReb/Uo="
+      APP_URL: https://nashidify.com
       DB_HOST: db
       DB_DATABASE: sc_app
       DB_USERNAME: sc_user
@@ -80,7 +82,8 @@ services:
   ffmpeg:
     image: jrottenberg/ffmpeg:6.1-ubuntu
     container_name: sc_ffmpeg
-    command: sleep infinity
+    entrypoint: ""
+    command: ["sleep", "infinity"]
     volumes:
       - ./app:/work
       - /tmp/transcode:/tmp/transcode
@@ -88,14 +91,21 @@ services:
       - sc_network
 
   queue:
-    image: serversideup/php:8.4-fpm
+    build:
+      context: .
+      dockerfile: Dockerfile.app
     container_name: sc_queue
     command: php artisan queue:work --sleep=3 --tries=3 --timeout=300
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'queue:work' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     working_dir: /var/www/html
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY}
+      APP_KEY: "base64:ktpbeVeWOEssf93G3o8wfk2y6nhC4/BKaxUlQReb/Uo="
       DB_HOST: db
       DB_DATABASE: sc_app
       DB_USERNAME: sc_user
@@ -148,7 +158,51 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://185.250.36.33/api
+      - VITE_API_URL=https://nashidify.com/api
+    networks:
+      - sc_network
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: sc_n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=n8n.nashidify.com
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://n8n.nashidify.com/
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=NashidifyN8N2026!
+      - DB_TYPE=mysqldb
+      - DB_MYSQLDB_HOST=db
+      - DB_MYSQLDB_PORT=3306
+      - DB_MYSQLDB_DATABASE=n8n
+      - DB_MYSQLDB_USER=sc_user
+      - DB_MYSQLDB_PASSWORD=sc_pass
+      - N8N_SECURE_COOKIE=false
+      - GENERIC_TIMEZONE=Europe/Berlin
+      - TZ=Europe/Berlin
+    volumes:
+      - n8ndata:/home/node/.n8n
+    depends_on:
+      - db
+    networks:
+      - sc_network
+
+  telethon-api:
+    build:
+      context: /root
+      dockerfile: Dockerfile.telethon
+    container_name: sc_telethon
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - nasheeds:/app/nasheeds
+      - /root/n8n_session.session:/app/n8n_session.session
     networks:
       - sc_network
 
@@ -158,6 +212,7 @@ services:
     volumes:
       - ./proxy-nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./app/public:/var/www/html/public:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     ports:
       - "80:80"
       - "443:443"
@@ -169,6 +224,8 @@ services:
 volumes:
   dbdata:
   miniodata:
+  n8ndata:
+  nasheeds:
 
 networks:
   sc_network:
