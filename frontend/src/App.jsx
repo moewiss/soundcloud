@@ -10,7 +10,7 @@ import {
   SkipBack, SkipForward, Play, Pause, Shuffle, Repeat as RepeatIcon, Repeat1,
   Maximize2, List as ListIcon, Volume2, VolumeX, Heart,
   Bell, Upload as UploadIcon, Shield, ChevronDown, Settings as SettingsIcon,
-  User, LogOut, LogIn, CircleUser, ArrowLeft, X, ChevronLeft, ChevronRight, Menu, Sparkles, Music, ListEnd, DownloadCloud
+  User, LogOut, LogIn, CircleUser, ArrowLeft, X, ChevronLeft, ChevronRight, Menu, Sparkles, Music, ListEnd, DownloadCloud, Navigation
 } from "lucide-react"
 
 import QueuePanel from "./components/QueuePanel"
@@ -46,6 +46,9 @@ const Downloads = lazy(() => import("./pages/Downloads"))
 const Onboarding = lazy(() => import("./pages/Onboarding"))
 const Terms = lazy(() => import("./pages/Terms"))
 const Privacy = lazy(() => import("./pages/Privacy"))
+const CarMode = lazy(() => import("./pages/CarMode"))
+
+import { MediaSessionController } from "./hooks/useMediaSession"
 
 const PageLoader = () => (
   <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "var(--sp-bg, #0a0f0d)" }}>
@@ -1368,6 +1371,10 @@ function PlayerBar() {
               <Maximize2 size={16} />
               <span>View Track</span>
             </button>
+            <button className="xp-action" onClick={() => { setExpanded(false); navigate('/drive') }}>
+              <Navigation size={16} />
+              <span>Drive</span>
+            </button>
           </div>
 
           {/* Mobile Queue Sheet */}
@@ -1678,6 +1685,7 @@ function AppContent() {
   const isOnboarding = location.pathname === "/onboarding"
   const isAdmin = location.pathname.startsWith("/admin")
   const isArtistPortal = location.pathname.startsWith("/artist")
+  const isDriveMode = location.pathname === "/drive"
 
   // Redirect logged-in users from / to /home
   if (location.pathname === "/" && isLoggedIn) {
@@ -1694,7 +1702,7 @@ function AppContent() {
 
   // Force 2FA setup for admins and verified artists who haven't enabled it
   const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
-  const needs2faSetup = isLoggedIn && !isGuest && !isAuthPage && !isAdmin && !isArtistPortal
+  const needs2faSetup = isLoggedIn && !isGuest && !isAuthPage && !isAdmin && !isArtistPortal && !isDriveMode
     && (storedUser.is_admin || storedUser.artist_verified_at || storedUser.plan_slug === 'artist_pro')
     && !storedUser.two_factor_confirmed_at
   if (needs2faSetup) {
@@ -1726,6 +1734,18 @@ function AppContent() {
         </Suspense>
         <Toaster position="bottom-center" toastOptions={{ style: { background: "rgba(20,20,30,0.95)", backdropFilter: "blur(20px)", color: "#fff", borderRadius: "12px", fontSize: "0.86rem", fontWeight: 500, border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" } }} />
       </>
+    )
+  }
+
+  if (isDriveMode) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/drive" element={<CarMode />} />
+        </Routes>
+        <PrayerAwarePlayback />
+        <MediaSessionController />
+      </Suspense>
     )
   }
 
@@ -1813,6 +1833,7 @@ function AppContent() {
       <PlayerBar />
       <MobileNav />
       <PrayerAwarePlayback />
+      <MediaSessionController />
       <Toaster position="bottom-center" toastOptions={{ style: { background: "rgba(30,50,44,0.88)", backdropFilter: "saturate(180%) blur(20px)", color: "#fff", borderRadius: "16px", fontSize: "0.86rem", fontWeight: 500, border: "none", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" } }} />
     </div>
   )

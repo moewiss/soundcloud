@@ -58,7 +58,7 @@ function HeroRosette() {
 }
 
 /* ─── Station data ─────────────────────────────────────────────────────── */
-const STATIONS = [
+export const STATIONS = [
   // ── Quran Reciters
   { id:  1, name: 'Mishary Rashid Alafasy',      category:'reciters',    lang:'Arabic',     stream:'https://qurango.net/radio/mishary_alafasi',                     backup:'http://live.mp3quran.net:8010',  freq:'88.1' },
   { id:  2, name: 'Abdul Basit Abdul Samad',      category:'reciters',    lang:'Arabic',     stream:'https://qurango.net/radio/abdulbasit_abdulsamad',               backup:'http://live.mp3quran.net:9974',  freq:'88.5' },
