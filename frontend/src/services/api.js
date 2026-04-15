@@ -64,6 +64,57 @@ export const api = {
     return res.data
   },
   
+  // 2FA
+  twoFactorSetup: async () => {
+    const res = await axiosInstance.post('/2fa/setup')
+    return res.data
+  },
+  twoFactorConfirm: async (code) => {
+    const res = await axiosInstance.post('/2fa/confirm', { code })
+    return res.data
+  },
+  twoFactorDisable: async (password) => {
+    const res = await axiosInstance.post('/2fa/disable', { password })
+    return res.data
+  },
+  twoFactorChallenge: async (data) => {
+    const res = await axiosInstance.post('/2fa/challenge', data)
+    return res.data
+  },
+  twoFactorRecoveryCodes: async (password) => {
+    const res = await axiosInstance.post('/2fa/recovery-codes', { password })
+    return res.data
+  },
+
+  getMe: async () => {
+    const res = await axiosInstance.get('/me')
+    return res.data
+  },
+
+  deleteAccount: async (password) => {
+    const res = await axiosInstance.delete('/account', { data: { password } })
+    return res.data
+  },
+
+  changePassword: async (currentPassword, newPassword, confirmPassword) => {
+    const res = await axiosInstance.post('/user/change-password', {
+      current_password: currentPassword,
+      password: newPassword,
+      password_confirmation: confirmPassword,
+    })
+    return res.data
+  },
+
+  getNotificationPreferences: async () => {
+    const res = await axiosInstance.get('/notification-preferences')
+    return res.data
+  },
+
+  updateNotificationPreferences: async (prefs) => {
+    const res = await axiosInstance.put('/notification-preferences', prefs)
+    return res.data
+  },
+
   guest: async () => {
     const res = await axiosInstance.post('/guest-login')
     return res.data
@@ -84,8 +135,8 @@ export const api = {
     return res.data
   },
   
-  verifyEmail: async (token) => {
-    const res = await axiosInstance.get(`/verify-email/${token}`)
+  verifyEmail: async ({ email, code }) => {
+    const res = await axiosInstance.post('/verify-email', { email, code })
     return res.data
   },
 
@@ -94,9 +145,30 @@ export const api = {
     return res.data
   },
 
+  // Feed (personalized - tracks from followed artists)
+  getFeed: async () => {
+    const res = await axiosInstance.get('/feed')
+    return res.data
+  },
+
   // Tracks
   getTracks: async (params = {}) => {
     const res = await axiosInstance.get('/tracks', { params })
+    return res.data
+  },
+
+  // Home page (single endpoint, AI-powered)
+  getHomePage: async () => {
+    const res = await axiosInstance.get('/home')
+    return res.data
+  },
+
+  // Report listen progress
+  reportListenProgress: async (trackId, durationListened) => {
+    const res = await axiosInstance.post('/play-events/update', {
+      track_id: trackId,
+      duration_listened: durationListened,
+    })
     return res.data
   },
   
@@ -111,6 +183,11 @@ export const api = {
     })
     return res.data
   },
+
+  importFromYoutube: async (data) => {
+    const res = await axiosInstance.post('/tracks/import-youtube', data)
+    return res.data
+  },
   
   updateTrack: async (id, data) => {
     const res = await axiosInstance.put(`/tracks/${id}`, data)
@@ -122,20 +199,38 @@ export const api = {
     return res.data
   },
 
+  getMyTracks: async () => {
+    const res = await axiosInstance.get('/me/tracks')
+    return res.data
+  },
+
   // Users
   getUser: async (id) => {
     const res = await axiosInstance.get(`/users/${id}`)
     return res.data
   },
   
-  getUserTracks: async (userId) => {
-    // Get tracks filtered by user_id
-    const res = await axiosInstance.get(`/tracks`, { params: { user_id: userId } })
-    // Handle both array and paginated responses
-    if (Array.isArray(res.data)) {
-      return res.data
+  getUserTracks: async (userId, opts = {}) => {
+    const params = { user_id: userId }
+    if (typeof opts === 'string') { params.sort = opts } // backward compat: getUserTracks(id, 'popular')
+    else {
+      if (opts.sort) params.sort = opts.sort
+      if (opts.category && opts.category !== 'all') params.category = opts.category
+      if (opts.page) params.page = opts.page
     }
-    return res.data.data || []
+    const res = await axiosInstance.get(`/tracks`, { params })
+    if (typeof opts === 'string' || !opts.page) {
+      // Flat array for simple calls
+      if (Array.isArray(res.data)) return res.data
+      return res.data.data || []
+    }
+    // Return full paginated response
+    return {
+      data: res.data.data || [],
+      current_page: res.data.current_page || 1,
+      last_page: res.data.last_page || 1,
+      total: res.data.total || 0,
+    }
   },
   
   updateUser: async (data) => {
@@ -242,8 +337,8 @@ export const api = {
   
   checkFollowing: async (userId) => {
     try {
-      const res = await axiosInstance.get(`/users/${userId}/is-following`)
-      return res.data
+      const res = await axiosInstance.get(`/users/${userId}`)
+      return { is_following: !!res.data.is_following }
     } catch (e) {
       return { is_following: false }
     }
@@ -305,9 +400,106 @@ export const api = {
     return res.data
   },
 
+  reorderPlaylistTracks: async (playlistId, trackIds) => {
+    const res = await axiosInstance.put(`/playlists/${playlistId}/reorder`, { track_ids: trackIds })
+    return res.data
+  },
+
+  togglePlaylistLike: async (playlistId) => {
+    const res = await axiosInstance.post(`/playlists/${playlistId}/like`)
+    return res.data
+  },
+
+  togglePlaylistRepost: async (playlistId) => {
+    const res = await axiosInstance.post(`/playlists/${playlistId}/repost`)
+    return res.data
+  },
+
   // Search
-  search: async (query, filter = 'everything') => {
-    const res = await axiosInstance.get('/search', { params: { q: query, filter } })
+  search: async (query, filter = 'everything', extraParams = {}) => {
+    const res = await axiosInstance.get('/search', { params: { q: query, filter, ...extraParams } })
+    return res.data
+  },
+
+  getSearchBrowse: async () => {
+    const res = await axiosInstance.get('/search/browse')
+    return res.data
+  },
+
+  getSearchSuggestions: async (q) => {
+    const res = await axiosInstance.get('/search/suggestions', { params: { q } })
+    return res.data
+  },
+
+  getAISearch: async (q) => {
+    const res = await axiosInstance.get('/search/ai', { params: { q } })
+    return res.data
+  },
+
+  clearSearchHistory: async () => {
+    const res = await axiosInstance.delete('/search/history')
+    return res.data
+  },
+
+  removeSearchHistoryItem: async (id) => {
+    const res = await axiosInstance.delete(`/search/history/${id}`)
+    return res.data
+  },
+
+  // Plans & Subscriptions
+  getPlans: async () => {
+    const res = await axiosInstance.get('/plans')
+    return res.data
+  },
+
+  getSubscriptionStatus: async () => {
+    const res = await axiosInstance.get('/subscription/status')
+    return res.data
+  },
+
+  createCheckout: async (planSlug, billingCycle) => {
+    const res = await axiosInstance.post('/subscription/checkout', { plan_slug: planSlug, billing_cycle: billingCycle })
+    return res.data
+  },
+
+  cancelSubscription: async () => {
+    const res = await axiosInstance.post('/subscription/cancel')
+    return res.data
+  },
+
+  resumeSubscription: async () => {
+    const res = await axiosInstance.post('/subscription/resume')
+    return res.data
+  },
+
+  changePlan: async (planSlug, billingCycle) => {
+    const res = await axiosInstance.post('/subscription/change-plan', { plan_slug: planSlug, billing_cycle: billingCycle })
+    return res.data
+  },
+
+  getBillingHistory: async () => {
+    const res = await axiosInstance.get('/subscription/billing-history')
+    return res.data
+  },
+
+  // Downloads (offline caching)
+  getDownloads: async () => {
+    const res = await axiosInstance.get('/downloads')
+    return res.data
+  },
+
+  saveForOffline: async (trackId) => {
+    const res = await axiosInstance.post(`/tracks/${trackId}/download`)
+    return res.data
+  },
+
+  removeDownload: async (trackId) => {
+    const res = await axiosInstance.delete(`/tracks/${trackId}/download`)
+    return res.data
+  },
+
+  getDownloadStatus: async (trackIds) => {
+    const res = await axiosInstance.post('/downloads/status', { track_ids: trackIds })
     return res.data
   },
 
@@ -391,8 +583,8 @@ export const api = {
   },
   
   // Admin - Track Management
-  getAdminTracks: async () => {
-    const res = await axiosInstance.get('/admin/tracks')
+  getAdminTracks: async (params) => {
+    const res = await axiosInstance.get('/admin/tracks', { params })
     return res.data
   },
   
@@ -424,6 +616,278 @@ export const api = {
   
   deleteAdminComment: async (commentId) => {
     const res = await axiosInstance.delete(`/admin/comments/${commentId}`)
+    return res.data
+  },
+
+  getActiveUsers: async () => {
+    const res = await axiosInstance.get('/admin/active-users')
+    return res.data
+  },
+
+  // ── Ads ──
+
+  getAudioAd: async () => {
+    const res = await axiosInstance.get('/ads/audio')
+    return res.data
+  },
+
+  getBannerAds: async (placement) => {
+    const res = await axiosInstance.get('/ads/banner', { params: { placement } })
+    return res.data
+  },
+
+  getSponsoredTracks: async () => {
+    const res = await axiosInstance.get('/ads/sponsored-tracks')
+    return res.data
+  },
+
+  recordAdImpression: async (adId, eventType) => {
+    const res = await axiosInstance.post('/ads/impression', { ad_id: adId, event_type: eventType })
+    return res.data
+  },
+
+  // Admin Ads
+  getAdDashboard: async () => {
+    const res = await axiosInstance.get('/admin/ads/dashboard')
+    return res.data
+  },
+
+  getAdvertisers: async (params) => {
+    const res = await axiosInstance.get('/admin/ads/advertisers', { params })
+    return res.data
+  },
+
+  createAdvertiser: async (data) => {
+    const res = await axiosInstance.post('/admin/ads/advertisers', data)
+    return res.data
+  },
+
+  updateAdvertiser: async (id, data) => {
+    const res = await axiosInstance.put(`/admin/ads/advertisers/${id}`, data)
+    return res.data
+  },
+
+  deleteAdvertiser: async (id) => {
+    const res = await axiosInstance.delete(`/admin/ads/advertisers/${id}`)
+    return res.data
+  },
+
+  getAdCampaigns: async (params) => {
+    const res = await axiosInstance.get('/admin/ads/campaigns', { params })
+    return res.data
+  },
+
+  createAdCampaign: async (data) => {
+    const res = await axiosInstance.post('/admin/ads/campaigns', data)
+    return res.data
+  },
+
+  updateAdCampaign: async (id, data) => {
+    const res = await axiosInstance.put(`/admin/ads/campaigns/${id}`, data)
+    return res.data
+  },
+
+  deleteAdCampaign: async (id) => {
+    const res = await axiosInstance.delete(`/admin/ads/campaigns/${id}`)
+    return res.data
+  },
+
+  getAdCreatives: async (params) => {
+    const res = await axiosInstance.get('/admin/ads/creatives', { params })
+    return res.data
+  },
+
+  createAdCreative: async (data) => {
+    const fd = new FormData()
+    Object.entries(data).forEach(([k, v]) => { if (v != null && v !== '') fd.append(k, v) })
+    const res = await axiosInstance.post('/admin/ads/creatives', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    return res.data
+  },
+
+  updateAdCreative: async (id, data) => {
+    const fd = new FormData()
+    Object.entries(data).forEach(([k, v]) => { if (v != null && v !== '') fd.append(k, v) })
+    fd.append('_method', 'PUT')
+    const res = await axiosInstance.post(`/admin/ads/creatives/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    return res.data
+  },
+
+  deleteAdCreative: async (id) => {
+    const res = await axiosInstance.delete(`/admin/ads/creatives/${id}`)
+    return res.data
+  },
+
+  // ── Track Promotions (Artist self-service) ──
+
+  getPromotions: async () => {
+    const res = await axiosInstance.get('/promotions')
+    return res.data
+  },
+
+  getPromotionPricing: async () => {
+    const res = await axiosInstance.get('/promotions/pricing')
+    return res.data
+  },
+
+  promoteTrack: async (data) => {
+    const res = await axiosInstance.post('/promotions/promote', data)
+    return res.data
+  },
+
+  cancelPromotion: async (id) => {
+    const res = await axiosInstance.post(`/promotions/${id}/cancel`)
+    return res.data
+  },
+
+  // ── Admin Extended ──
+
+  getAdminAnalytics: async () => {
+    const res = await axiosInstance.get('/admin/analytics')
+    return res.data
+  },
+
+  // Playlists
+  getAdminPlaylists: async (params) => {
+    const res = await axiosInstance.get('/admin/playlists', { params })
+    return res.data
+  },
+  updateAdminPlaylist: async (id, data) => {
+    const res = await axiosInstance.put(`/admin/playlists/${id}`, data)
+    return res.data
+  },
+  deleteAdminPlaylist: async (id) => {
+    const res = await axiosInstance.delete(`/admin/playlists/${id}`)
+    return res.data
+  },
+
+  // Track editing & bulk
+  adminUpdateTrack: async (id, data) => {
+    const res = await axiosInstance.put(`/admin/tracks/${id}/edit`, data)
+    return res.data
+  },
+  adminBulkTrackAction: async (ids, action) => {
+    const res = await axiosInstance.post('/admin/tracks/bulk', { ids, action })
+    return res.data
+  },
+
+  // Likes, Reposts, Follows
+  getAdminLikes: async (params) => {
+    const res = await axiosInstance.get('/admin/likes', { params })
+    return res.data
+  },
+  removeAdminLike: async (userId, trackId) => {
+    const res = await axiosInstance.delete('/admin/likes', { data: { user_id: userId, track_id: trackId } })
+    return res.data
+  },
+  getAdminReposts: async (params) => {
+    const res = await axiosInstance.get('/admin/reposts', { params })
+    return res.data
+  },
+  removeAdminRepost: async (userId, trackId) => {
+    const res = await axiosInstance.delete('/admin/reposts', { data: { user_id: userId, track_id: trackId } })
+    return res.data
+  },
+  getAdminFollows: async (params) => {
+    const res = await axiosInstance.get('/admin/follows', { params })
+    return res.data
+  },
+
+  // Subscriptions
+  getAdminSubscriptions: async () => {
+    const res = await axiosInstance.get('/admin/subscriptions')
+    return res.data
+  },
+  updateUserPlan: async (userId, planSlug) => {
+    const res = await axiosInstance.put(`/admin/users/${userId}/plan`, { plan_slug: planSlug })
+    return res.data
+  },
+
+  // Artist verification
+  verifyArtist: async (userId) => {
+    const res = await axiosInstance.post(`/admin/users/${userId}/verify-artist`)
+    return res.data
+  },
+  unverifyArtist: async (userId) => {
+    const res = await axiosInstance.post(`/admin/users/${userId}/unverify-artist`)
+    return res.data
+  },
+
+  // Announcements
+  getAdminAnnouncements: async () => {
+    const res = await axiosInstance.get('/admin/announcements')
+    return res.data
+  },
+  createAnnouncement: async (data) => {
+    const res = await axiosInstance.post('/admin/announcements', data)
+    return res.data
+  },
+  updateAnnouncement: async (id, data) => {
+    const res = await axiosInstance.put(`/admin/announcements/${id}`, data)
+    return res.data
+  },
+  deleteAnnouncement: async (id) => {
+    const res = await axiosInstance.delete(`/admin/announcements/${id}`)
+    return res.data
+  },
+
+  // Audit Logs
+  getAuditLogs: async (params) => {
+    const res = await axiosInstance.get('/admin/audit-logs', { params })
+    return res.data
+  },
+
+  // Site Settings
+  getAdminSettings: async () => {
+    const res = await axiosInstance.get('/admin/settings')
+    return res.data
+  },
+  updateAdminSettings: async (settings) => {
+    const res = await axiosInstance.put('/admin/settings', { settings })
+    return res.data
+  },
+
+  // Public announcements
+  getAnnouncements: async () => {
+    const res = await axiosInstance.get('/announcements')
+    return res.data
+  },
+
+  // ── Onboarding ──
+
+  getOnboardingState: async () => {
+    const res = await axiosInstance.get('/onboarding/state')
+    return res.data
+  },
+
+  saveOnboardingStep: async (step, data) => {
+    const res = await axiosInstance.post('/onboarding/step', { step, ...data })
+    return res.data
+  },
+
+  getCandidateArtists: async () => {
+    const res = await axiosInstance.get('/onboarding/candidate-artists')
+    return res.data
+  },
+
+  completeOnboarding: async () => {
+    const res = await axiosInstance.post('/onboarding/complete')
+    return res.data
+  },
+
+  skipOnboarding: async () => {
+    const res = await axiosInstance.post('/onboarding/skip')
+    return res.data
+  },
+
+  // ── User Preferences (Settings) ──
+
+  getUserPreferences: async () => {
+    const res = await axiosInstance.get('/onboarding/state')
+    return res.data
+  },
+
+  updateUserPreferences: async (data) => {
+    const res = await axiosInstance.post('/onboarding/step', data)
     return res.data
   }
 }
