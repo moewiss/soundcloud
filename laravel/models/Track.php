@@ -17,12 +17,26 @@ class Track extends Model
         'description',
         'cover_path',
         'audio_path',
+        'audio_path_hq',
+        'audio_path_lossless',
         'source_path',
         'duration_seconds',
+        'file_size_bytes',
         'status',
         'plays',
         'tags',
         'waveform',
+        'category',
+        'style_tag',
+        'family_safe',
+        'youtube_url',
+        'lyrics',
+        'is_premium',
+        'is_downloadable',
+        'download_price_cents',
+        'scheduled_at',
+        'review_notes',
+        'draft_saved_at',
     ];
 
     protected $casts = [
@@ -30,6 +44,12 @@ class Track extends Model
         'waveform' => 'array',
         'plays' => 'integer',
         'duration_seconds' => 'integer',
+        'file_size_bytes' => 'integer',
+        'is_premium' => 'boolean',
+        'is_downloadable' => 'boolean',
+        'family_safe' => 'boolean',
+        'scheduled_at' => 'datetime',
+        'draft_saved_at' => 'datetime',
     ];
 
     protected $appends = ['audio_url', 'cover_url', 'duration'];

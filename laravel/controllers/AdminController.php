@@ -363,6 +363,35 @@ class AdminController extends Controller
         return response()->json(['message' => 'Comment deleted successfully']);
     }
 
+    public function verifyArtist($id)
+    {
+        $this->checkAdmin();
+        $user = User::findOrFail($id);
+
+        $user->artist_verified_at = now();
+        $user->is_artist = true;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Artist verified successfully',
+            'user' => $user->load('profile'),
+        ]);
+    }
+
+    public function unverifyArtist($id)
+    {
+        $this->checkAdmin();
+        $user = User::findOrFail($id);
+
+        $user->artist_verified_at = null;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Artist verification removed',
+            'user' => $user->load('profile'),
+        ]);
+    }
+
     public function getActiveUsers()
     {
         $this->checkAdmin();

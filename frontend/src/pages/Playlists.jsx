@@ -22,7 +22,7 @@ export default function Playlists() {
       const data = await api.getPlaylists()
       setPlaylists(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.error('Error:', error)
+      // fetch error
       setPlaylists([])
     } finally {
       setLoading(false)

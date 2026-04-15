@@ -66,7 +66,7 @@ export default function Downloads() {
       } else {
         setDownloads(cachedTracks.map(t => ({ ...t, is_cached: true })))
       }
-    } catch (err) { console.error(err) }
+    } catch (err) { /* ignored */ }
     finally { setLoading(false) }
   }
 

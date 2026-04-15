@@ -6,7 +6,7 @@ export const copyToClipboard = async (text) => {
       await navigator.clipboard.writeText(text)
       return true
     } catch (err) {
-      console.warn('Clipboard API failed, trying fallback:', err)
+      // Clipboard API failed, trying fallback
     }
   }
 
@@ -30,7 +30,7 @@ export const copyToClipboard = async (text) => {
       throw new Error('Copy command failed')
     }
   } catch (err) {
-    console.error('Failed to copy to clipboard:', err)
+    // copy failed
     throw err
   }
 }

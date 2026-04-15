@@ -39,7 +39,7 @@ export default function Admin() {
       const filteredTracks = filter === 'all' ? trackList : trackList.filter(t => t.status === filter)
       setTracks(filteredTracks)
     } catch (error) {
-      console.error('Error:', error)
+      // fetch error
       toast.error('Failed to load tracks')
     } finally {
       setLoading(false)
@@ -51,7 +51,7 @@ export default function Admin() {
       const data = await api.getActiveUsers()
       setActiveUsers(data.active_users || [])
     } catch (error) {
-      console.error('Error fetching active users:', error)
+      // fetch error
     }
   }
 
@@ -65,7 +65,7 @@ export default function Admin() {
         rejected: trackList.filter(t => t.status === 'rejected').length,
       })
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      // fetch error
     }
   }
 
@@ -102,7 +102,7 @@ export default function Admin() {
       fetchTracks()
       fetchStats()
     } catch (error) {
-      console.error('Delete error:', error)
+      // delete error
       toast.error(error.response?.data?.message || 'Failed to delete track')
     }
   }

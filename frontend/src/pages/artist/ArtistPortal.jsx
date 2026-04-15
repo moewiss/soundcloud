@@ -154,8 +154,7 @@ export default function ArtistPortal() {
         setOnboardingState(data)
         setOnboardingLoading(false)
       })
-      .catch(err => {
-        console.error(err)
+      .catch(() => {
         setOnboardingLoading(false)
       })
   }, [navigate])
@@ -813,8 +812,7 @@ function AnalyticsSection() {
     setLoading(true)
     artistApi.getAnalytics(period)
       .then(d => { setData(d); setLoading(false) })
-      .catch(err => {
-        console.error('Analytics error:', err)
+      .catch(() => {
         setData({
           period, plan: 'artist', is_pro: false, has_analytics: false,
           overview: { plays: 0, plays_change: 0, likes: 0, likes_change: 0, followers: 0, followers_change: 0, comments: 0, comments_change: 0, reposts: 0, reposts_change: 0, total_followers: 0, total_plays: 0 },

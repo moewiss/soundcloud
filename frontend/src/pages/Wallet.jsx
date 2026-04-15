@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
-import toast from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 
 const FALLBACK_BONUS_TIERS = [
   { amount: 500,   label: '$5',   bonus: 0,   total: '$5',   bonusLabel: null },
@@ -95,7 +95,7 @@ export default function Wallet() {
         setBonusTiers(mapped)
       }
     } catch (e) {
-      console.error(e)
+      // fetch error
       toast.error('Failed to load wallet')
     } finally {
       setLoading(false)

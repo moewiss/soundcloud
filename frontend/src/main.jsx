@@ -12,18 +12,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // ── Register Service Worker for offline audio caching ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then((reg) => {
-      console.log('[SW] Registered:', reg.scope)
-    }).catch((err) => {
-      console.warn('[SW] Registration failed:', err)
-    })
+    navigator.serviceWorker.register('/sw.js').then(() => {}).catch(() => {})
   })
 
   // Request persistent storage so browser doesn't evict cached audio
   if (navigator.storage?.persist) {
-    navigator.storage.persist().then((granted) => {
-      if (granted) console.log('[Storage] Persistent storage granted')
-    })
+    navigator.storage.persist().then(() => {})
   }
 }
 

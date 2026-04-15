@@ -24,7 +24,7 @@ export default function Feed() {
         const data = await api.getTracks()
         setTracks(Array.isArray(data) ? data : (data?.data || []))
       }
-    } catch (e) { console.error(e) }
+    } catch (e) { /* ignored */ }
     finally { setLoading(false) }
   }
 

@@ -38,6 +38,8 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
+        'stripe_customer_id',
+        'downloads_this_month',
     ];
 
     protected $hidden = [
@@ -54,6 +56,7 @@ class User extends Authenticatable
         'is_artist' => 'boolean',
         'is_private' => 'boolean',
         'artist_verified_at' => 'datetime',
+        'downloads_this_month' => 'integer',
     ];
 
     public function scopePublic($query)

@@ -50,7 +50,7 @@ import Privacy from "./pages/Privacy"
 class ErrorBoundary extends Component {
   state = { hasError: false }
   static getDerivedStateFromError() { return { hasError: true } }
-  componentDidCatch(error, info) { console.error('App crash:', error, info) }
+  componentDidCatch() {}
   render() {
     if (this.state.hasError) {
       return (
@@ -199,7 +199,7 @@ function Navbar() {
           playlists: (data.playlists || data.data?.playlists || []).slice(0, 4)
         })
       } catch (err) {
-        console.error('Search failed:', err)
+        // search failed
         setSearchResults({ tracks: [], users: [], playlists: [] })
       }
       finally { setSearchLoading(false) }
@@ -1788,8 +1788,6 @@ function AppContent() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/promote" element={<PromoteTrack />} />
           <Route path="/promote/:trackId" element={<PromoteTrack />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </main>

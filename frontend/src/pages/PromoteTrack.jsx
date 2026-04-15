@@ -91,7 +91,7 @@ export default function PromoteTrack() {
       setCanPromote(pricingRes.can_promote !== false)
       setUserPlan(pricingRes.plan || 'free')
     } catch (e) {
-      console.error(e)
+      // fetch error
       toast.error('Failed to load promotion data')
     } finally {
       setLoading(false)

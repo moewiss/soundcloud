@@ -40,6 +40,18 @@ class Playlist extends Model
             ->orderBy('playlist_track.position');
     }
 
+    public function likedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'playlist_likes')
+            ->withTimestamps();
+    }
+
+    public function repostedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'playlist_reposts')
+            ->withTimestamps();
+    }
+
     public function getCoverUrlAttribute(): ?string
     {
         if (!$this->cover_path) {

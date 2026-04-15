@@ -869,7 +869,7 @@ export default function Home() {
       setHero(data.hero || null)
       setSections(data.sections || [])
     } catch (e) {
-      console.error('Home fetch failed:', e)
+      // Home fetch failed, try fallback
       // Fallback: try old endpoint
       try {
         const allData = await api.getTracks()
@@ -1077,10 +1077,10 @@ export default function Home() {
                 <circle cx="40" cy="30" r="1.2" fill="#fff" opacity="0.4"/><circle cx="150" cy="45" r="1" fill="#fff" opacity="0.3"/><circle cx="280" cy="25" r="1.5" fill="#fff" opacity="0.45"/><circle cx="350" cy="55" r="0.8" fill="#fff" opacity="0.3"/><circle cx="100" cy="60" r="1" fill="#fff" opacity="0.25"/>
                 {/* Hanging lanterns */}
                 <line x1="80" y1="0" x2="80" y2="70" stroke="#C9A84C" strokeWidth="0.8" opacity="0.3"/>
-                <path d="M70 70Q70 60 80 55Q90 60 90 70Q90 85 80 90Q70 85 70 70Z" fill="#C9A84C" opacity="0.15" stroke="#C9A84C" strokeWidth="0.8" opacity="0.4"/>
+                <path d="M70 70Q70 60 80 55Q90 60 90 70Q90 85 80 90Q70 85 70 70Z" fill="#C9A84C" stroke="#C9A84C" strokeWidth="0.8" opacity="0.4"/>
                 <circle cx="80" cy="72" r="3" fill="#C9A84C" opacity="0.25"/>
                 <line x1="200" y1="0" x2="200" y2="50" stroke="#C9A84C" strokeWidth="0.8" opacity="0.3"/>
-                <path d="M190 50Q190 40 200 35Q210 40 210 50Q210 65 200 70Q190 65 190 50Z" fill="#C9A84C" opacity="0.12" stroke="#C9A84C" strokeWidth="0.8" opacity="0.35"/>
+                <path d="M190 50Q190 40 200 35Q210 40 210 50Q210 65 200 70Q190 65 190 50Z" fill="#C9A84C" stroke="#C9A84C" strokeWidth="0.8" opacity="0.35"/>
                 <circle cx="200" cy="52" r="3" fill="#C9A84C" opacity="0.2"/>
                 <line x1="330" y1="0" x2="330" y2="80" stroke="#C9A84C" strokeWidth="0.8" opacity="0.3"/>
                 <path d="M320 80Q320 70 330 65Q340 70 340 80Q340 95 330 100Q320 95 320 80Z" fill="#C9A84C" stroke="#C9A84C" strokeWidth="0.8" opacity="0.4"/>
