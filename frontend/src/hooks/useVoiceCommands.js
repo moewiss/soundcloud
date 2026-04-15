@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 const COMMANDS = [
   { patterns: ['next', 'skip', 'next track', 'next song'], action: 'next' },
@@ -14,38 +14,44 @@ const COMMANDS = [
   { patterns: ['play lectures', 'lectures', 'islamic lectures'], action: 'browse_lectures' },
 ]
 
-function processCommand(text, onCommand) {
+function processCommand(text, callback) {
   const lower = text.toLowerCase().trim()
 
   // Radio command: "radio [name]" or "play radio [name]"
   if (lower.startsWith('radio ') || lower.startsWith('play radio ')) {
     const query = lower.replace(/^(play )?radio /, '')
-    onCommand({ action: 'radio', query })
+    callback({ action: 'radio', query })
     return
   }
 
   // Search command: "search [query]"
   if (lower.startsWith('search ') || lower.startsWith('find ') || lower.startsWith('look for ')) {
     const query = lower.replace(/^(search |find |look for )/, '')
-    onCommand({ action: 'search', query })
+    callback({ action: 'search', query })
     return
   }
 
   // Pattern matching
   for (const cmd of COMMANDS) {
     if (cmd.patterns.some(p => lower.includes(p))) {
-      onCommand({ action: cmd.action, transcript: lower })
+      callback({ action: cmd.action, transcript: lower })
       return
     }
   }
 
-  onCommand({ action: 'unknown', transcript: lower })
+  callback({ action: 'unknown', transcript: lower })
 }
 
 export function useVoiceCommands({ onCommand }) {
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const recognitionRef = useRef(null)
+  const onCommandRef = useRef(onCommand)
+
+  // Keep ref fresh so the recognition callback always uses the latest handler
+  useEffect(() => {
+    onCommandRef.current = onCommand
+  }, [onCommand])
 
   const isSupported = typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
@@ -53,28 +59,47 @@ export function useVoiceCommands({ onCommand }) {
   const startListening = useCallback(() => {
     if (!isSupported) return
 
+    // Stop any existing recognition
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop() } catch {}
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     const recognition = new SpeechRecognition()
     recognition.continuous = false
     recognition.interimResults = false
     recognition.lang = 'en-US'
+    recognition.maxAlternatives = 1
 
     recognition.onresult = (event) => {
       const text = event.results[0][0].transcript
       setTranscript(text)
-      processCommand(text, onCommand)
+      // Use ref to get the latest callback
+      processCommand(text, onCommandRef.current)
     }
 
     recognition.onend = () => setIsListening(false)
-    recognition.onerror = () => setIsListening(false)
+    recognition.onerror = (e) => {
+      setIsListening(false)
+      if (e.error === 'not-allowed') {
+        setTranscript('Microphone access denied')
+      }
+    }
 
     recognitionRef.current = recognition
-    recognition.start()
-    setIsListening(true)
-  }, [isSupported, onCommand])
+    try {
+      recognition.start()
+      setIsListening(true)
+      setTranscript('')
+    } catch {
+      setIsListening(false)
+    }
+  }, [isSupported])
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop()
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop() } catch {}
+    }
     setIsListening(false)
   }, [])
 

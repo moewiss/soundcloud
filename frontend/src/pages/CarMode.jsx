@@ -345,7 +345,7 @@ export default function CarMode() {
     }
   }, [playNext, playPrevious, togglePlay, toggleShuffle, toggleRepeat, handleLike, playRadio, showHint])
 
-  const { isListening, startListening, stopListening, isSupported: voiceSupported } = useVoiceCommands({
+  const { isListening, transcript, startListening, stopListening, isSupported: voiceSupported } = useVoiceCommands({
     onCommand: handleVoiceCommand,
   })
 
@@ -526,6 +526,7 @@ export default function CarMode() {
           <div className="cm-voice-ring" />
           <Mic size={32} />
           <span>Listening...</span>
+          {transcript && <span className="cm-voice-transcript">"{transcript}"</span>}
         </div>
       )}
     </div>
