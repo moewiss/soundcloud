@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router-dom"
 import ReactDOM from "react-dom"
 import { Toaster, toast } from "react-hot-toast"
-import { useState, useEffect, useRef, Component } from "react"
+import { useState, useEffect, useRef, Component, lazy, Suspense } from "react"
 import { PlayerProvider, usePlayer } from "./context/PlayerContext"
 import { api } from "./services/api"
 import { usePrayerTimes } from "./hooks/usePrayerTimes"
@@ -14,37 +14,44 @@ import {
 } from "lucide-react"
 
 import QueuePanel from "./components/QueuePanel"
-import Home from "./pages/Home"
-import Library from "./pages/Library"
-import Search from "./pages/Search"
-import Upload from "./pages/Upload"
-import TrackDetail from "./pages/TrackDetail"
-import UserProfile from "./pages/UserProfile"
-import FollowersList from "./pages/FollowersList"
-import Playlists from "./pages/Playlists"
-import PlaylistDetail from "./pages/PlaylistDetail"
-import Settings from "./pages/Settings"
-import Notifications from "./pages/Notifications"
-import Login from "./pages/Login"
-import Register from "./pages/Register"
-import TwoFactorChallenge from "./pages/TwoFactorChallenge"
-import TwoFactorSetup from "./pages/TwoFactorSetup"
-import ForgotPassword from "./pages/ForgotPassword"
-import ResetPassword from "./pages/ResetPassword"
-import VerifyEmail from "./pages/VerifyEmail"
-import AdminPanel from "./pages/AdminPanel"
-import ArtistPortal from "./pages/artist/ArtistPortal"
-import MyTracks from "./pages/MyTracks"
-import AdhanTimes from "./pages/AdhanTimes"
-import Radio from "./pages/Radio"
-import ComingSoon from "./pages/ComingSoon"
-import Pricing from "./pages/Pricing"
-import PromoteTrack from "./pages/PromoteTrack"
-import Downloads from "./pages/Downloads"
-// Wallet removed
-import Onboarding from "./pages/Onboarding"
-import Terms from "./pages/Terms"
-import Privacy from "./pages/Privacy"
+
+// Lazy-loaded pages for code splitting
+const Home = lazy(() => import("./pages/Home"))
+const Library = lazy(() => import("./pages/Library"))
+const Search = lazy(() => import("./pages/Search"))
+const Upload = lazy(() => import("./pages/Upload"))
+const TrackDetail = lazy(() => import("./pages/TrackDetail"))
+const UserProfile = lazy(() => import("./pages/UserProfile"))
+const FollowersList = lazy(() => import("./pages/FollowersList"))
+const Playlists = lazy(() => import("./pages/Playlists"))
+const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"))
+const Settings = lazy(() => import("./pages/Settings"))
+const Notifications = lazy(() => import("./pages/Notifications"))
+const Login = lazy(() => import("./pages/Login"))
+const Register = lazy(() => import("./pages/Register"))
+const TwoFactorChallenge = lazy(() => import("./pages/TwoFactorChallenge"))
+const TwoFactorSetup = lazy(() => import("./pages/TwoFactorSetup"))
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"))
+const ResetPassword = lazy(() => import("./pages/ResetPassword"))
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"))
+const AdminPanel = lazy(() => import("./pages/AdminPanel"))
+const ArtistPortal = lazy(() => import("./pages/artist/ArtistPortal"))
+const MyTracks = lazy(() => import("./pages/MyTracks"))
+const AdhanTimes = lazy(() => import("./pages/AdhanTimes"))
+const Radio = lazy(() => import("./pages/Radio"))
+const ComingSoon = lazy(() => import("./pages/ComingSoon"))
+const Pricing = lazy(() => import("./pages/Pricing"))
+const PromoteTrack = lazy(() => import("./pages/PromoteTrack"))
+const Downloads = lazy(() => import("./pages/Downloads"))
+const Onboarding = lazy(() => import("./pages/Onboarding"))
+const Terms = lazy(() => import("./pages/Terms"))
+const Privacy = lazy(() => import("./pages/Privacy"))
+
+const PageLoader = () => (
+  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "var(--sp-bg, #0a0f0d)" }}>
+    <div style={{ width: 36, height: 36, border: "3px solid rgba(255,255,255,0.1)", borderTopColor: "#1DB954", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+  </div>
+)
 
 // ─── Error Boundary ───
 class ErrorBoundary extends Component {
@@ -1698,9 +1705,11 @@ function AppContent() {
   if (isAdmin) {
     return (
       <>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/admin" element={<AdminPanel />} />
         </Routes>
+        </Suspense>
         <Toaster position="bottom-center" toastOptions={{ style: { background: "rgba(20,20,30,0.95)", backdropFilter: "blur(20px)", color: "#fff", borderRadius: "12px", fontSize: "0.86rem", fontWeight: 500, border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" } }} />
       </>
     )
@@ -1710,9 +1719,11 @@ function AppContent() {
   if (isArtistPortal) {
     return (
       <>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/artist/*" element={<ArtistPortal />} />
         </Routes>
+        </Suspense>
         <Toaster position="bottom-center" toastOptions={{ style: { background: "rgba(20,20,30,0.95)", backdropFilter: "blur(20px)", color: "#fff", borderRadius: "12px", fontSize: "0.86rem", fontWeight: 500, border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" } }} />
       </>
     )
@@ -1721,9 +1732,11 @@ function AppContent() {
   if (isComingSoon) {
     return (
       <div style={{ height: "100vh", overflow: "auto" }}>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<ComingSoon />} />
         </Routes>
+        </Suspense>
         <Toaster position="bottom-center" toastOptions={{ style: { background: "rgba(30,50,44,0.88)", backdropFilter: "saturate(180%) blur(20px)", color: "#fff", borderRadius: "16px", fontSize: "0.86rem", fontWeight: 500, border: "none", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" } }} />
       </div>
     )
@@ -1732,9 +1745,11 @@ function AppContent() {
   if (isOnboarding) {
     return (
       <div style={{ height: "100vh", overflow: "auto" }}>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
         </Routes>
+        </Suspense>
         <Toaster position="bottom-center" toastOptions={{ style: { background: "rgba(30,50,44,0.88)", backdropFilter: "saturate(180%) blur(20px)", color: "#fff", borderRadius: "16px", fontSize: "0.86rem", fontWeight: 500, border: "none", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" } }} />
       </div>
     )
@@ -1743,6 +1758,7 @@ function AppContent() {
   if (isAuthPage) {
     return (
       <div style={{ height: "100vh", overflow: "auto" }}>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -1754,6 +1770,7 @@ function AppContent() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
         </Routes>
+        </Suspense>
         <Toaster position="bottom-center" toastOptions={{ style: { background: "rgba(30,50,44,0.88)", backdropFilter: "saturate(180%) blur(20px)", color: "#fff", borderRadius: "16px", fontSize: "0.86rem", fontWeight: 500, border: "none", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" } }} />
       </div>
     )
@@ -1763,6 +1780,7 @@ function AppContent() {
     <div className="app-navbar-layout">
       <Navbar />
       <main className="sp-main-full">
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />
@@ -1790,6 +1808,7 @@ function AppContent() {
           <Route path="/promote/:trackId" element={<PromoteTrack />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
+        </Suspense>
       </main>
       <PlayerBar />
       <MobileNav />

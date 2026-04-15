@@ -4,6 +4,16 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['lucide-react', '@phosphor-icons/react', 'react-hot-toast'],
+        }
+      }
+    }
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -17,4 +27,3 @@ export default defineConfig({
     }
   }
 })
-
