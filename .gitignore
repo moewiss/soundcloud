@@ -9,7 +9,20 @@ laravel/vendor/
 laravel/node_modules/
 laravel/storage/
 laravel/bootstrap/cache/
-/app/
+# /app/ holds the live Laravel bind-mount; ignored by default.
+# Pricing-critical config force-tracked despite /app/ ignore — reconciled
+# 2026-05-13 pre-v1.0.0; live Stripe Price IDs encoded in seeder +
+# migration must not drift untracked. Parent dirs must be un-ignored
+# too because git won't descend into excluded directories.
+/app/*
+!/app/database/
+/app/database/*
+!/app/database/seeders/
+/app/database/seeders/*
+!/app/database/seeders/PlanPricesSeeder.php
+!/app/database/migrations/
+/app/database/migrations/*
+!/app/database/migrations/2026_05_13_000001_reconcile_plan_prices_audit_alignment.php
 storage-logs/
 
 # Frontend
