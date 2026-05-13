@@ -211,6 +211,273 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * Mobile PaymentSheet — Step 1.
+     *
+     * Returns the customer_id + ephemeral_key + setup_intent client_secret
+     * that @stripe/stripe-react-native's initPaymentSheet expects. Mobile
+     * collects the card via the native sheet, then calls
+     * mobileConfirmSubscription() to actually create the Subscription.
+     *
+     * Companion to /subscription/checkout (which returns a Stripe-hosted
+     * Checkout URL for web). Mobile cannot use the web flow because RN has
+     * no clean browser handoff for the redirect.
+     */
+    public function mobileCheckout(Request $request)
+    {
+        $request->validate([
+            'plan_slug' => 'required|string|exists:plans,slug',
+            'billing_cycle' => 'required|in:monthly,annual',
+        ]);
+
+        $plan = DB::table('plans')->where('slug', $request->plan_slug)->first();
+        if (!$plan || $plan->slug === 'free') {
+            return response()->json(['message' => 'Invalid plan'], 422);
+        }
+        if ($plan->slug === 'artist') {
+            // Paid Artist tier is sunset (Sprint C.5) — closed to new signups.
+            // Companion to client-side hard-block in PricingScreen.handlePlanAction.
+            return response()->json(['message' => 'Artist tier is closed to new signups. Munshid is the recommended creator tier.'], 410);
+        }
+
+        $user = $request->user();
+
+        // Route already-subscribed users to change-plan instead of double-charging.
+        if ($user->subscribed('default')) {
+            return response()->json(['message' => 'Already subscribed. Use change-plan to switch tiers.'], 409);
+        }
+
+        $tier = $this->regionService->detectTier($request, $user);
+        $priceId = $this->resolveStripePriceId($plan, $tier, $request->billing_cycle);
+        if (!$priceId) {
+            return response()->json(['message' => 'Stripe price not configured for this plan. Please contact support.'], 422);
+        }
+
+        // Lock pricing tier on first checkout (anti-arbitrage); mirrors the
+        // web checkout() method's behaviour.
+        if (!$user->pricing_tier) {
+            $user->update(['pricing_tier' => $tier]);
+        }
+
+        // Ensure Stripe Customer exists for this user.
+        if (!$user->stripe_id) {
+            $user->createAsStripeCustomer();
+        }
+
+        $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+
+        // EphemeralKey lets the mobile SDK fetch the customer's saved methods.
+        // Stripe API version matches the pattern already established in
+        // WalletController::mobileTopUp (proven compatible with the bundled
+        // @stripe/stripe-react-native version).
+        $ephemeralKey = $stripe->ephemeralKeys->create(
+            ['customer' => $user->stripe_id],
+            ['stripe_version' => '2023-10-16']
+        );
+
+        // SetupIntent — collect payment method now, charge later on confirm.
+        // Metadata is recoverable if the confirm call drops paymentMethodId
+        // (mobile's retrieveSetupIntent can fail; see PricingScreen.tsx:332).
+        $setupIntent = $stripe->setupIntents->create([
+            'customer' => $user->stripe_id,
+            'payment_method_types' => ['card'],
+            'usage' => 'off_session',
+            'metadata' => [
+                'nashidify_plan_slug' => $plan->slug,
+                'nashidify_billing_cycle' => $request->billing_cycle,
+                'nashidify_price_id' => $priceId,
+            ],
+        ]);
+
+        return response()->json([
+            'customer_id' => $user->stripe_id,
+            'ephemeral_key' => $ephemeralKey->secret,
+            'setup_intent' => $setupIntent->client_secret,
+            'publishable_key' => config('cashier.key'),
+        ]);
+    }
+
+    /**
+     * Mobile PaymentSheet — Step 2.
+     *
+     * Receives payment_method_id from the confirmed SetupIntent and creates
+     * the actual Subscription. The Stripe webhook (StripeWebhookController)
+     * handles user.plan_slug + is_artist sync downstream — this method just
+     * triggers the customer.subscription.created event by creating the sub.
+     *
+     * Defensive: if payment_method_id is missing (mobile's retrieveSetupIntent
+     * can fail per PricingScreen.tsx:329-336), falls back to the customer's
+     * most-recent payment method (which the SetupIntent confirmation just
+     * attached).
+     */
+    public function mobileConfirmSubscription(Request $request)
+    {
+        $request->validate([
+            'plan_slug' => 'required|string|exists:plans,slug',
+            'billing_cycle' => 'required|in:monthly,annual',
+            'payment_method_id' => 'nullable|string',
+        ]);
+
+        $plan = DB::table('plans')->where('slug', $request->plan_slug)->first();
+        if (!$plan || $plan->slug === 'free') {
+            return response()->json(['message' => 'Invalid plan'], 422);
+        }
+        if ($plan->slug === 'artist') {
+            return response()->json(['message' => 'Artist tier is closed to new signups.'], 410);
+        }
+
+        $user = $request->user();
+        if ($user->subscribed('default')) {
+            return response()->json(['message' => 'Already subscribed.'], 409);
+        }
+
+        // Use the tier locked at mobileCheckout; fall back to live detection
+        // if somehow missing (shouldn't happen unless mobileCheckout was skipped).
+        $tier = $user->pricing_tier ?: $this->regionService->detectTier($request, $user);
+        $priceId = $this->resolveStripePriceId($plan, $tier, $request->billing_cycle);
+        if (!$priceId) {
+            return response()->json(['message' => 'Stripe price not configured for this plan.'], 422);
+        }
+
+        // Resolve payment method: prefer client-provided, fall back to most
+        // recent card attached to this Customer (SetupIntent confirmation
+        // would have attached one).
+        $paymentMethodId = $request->payment_method_id ?: null;
+        if (!$paymentMethodId) {
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $list = $stripe->paymentMethods->all([
+                'customer' => $user->stripe_id,
+                'type' => 'card',
+                'limit' => 1,
+            ]);
+            if (empty($list->data)) {
+                return response()->json(['message' => 'No payment method on file. Please complete payment setup.'], 422);
+            }
+            $paymentMethodId = $list->data[0]->id;
+        }
+
+        try {
+            $user->updateDefaultPaymentMethod($paymentMethodId);
+
+            $builder = $user->newSubscription('default', $priceId);
+
+            // Trial parity with web /subscription/checkout: Plus gets 7-day
+            // trial, artist_pro does not. Explicit override of the Stripe
+            // Price's trial_period_days so web/mobile behave identically.
+            if ($plan->slug !== 'artist_pro') {
+                $builder->trialDays(7);
+            }
+
+            $subscription = $builder->add();
+        } catch (\Stripe\Exception\CardException $e) {
+            return response()->json(['message' => $e->getMessage()], 402);
+        } catch (\Exception $e) {
+            \Log::error('Mobile subscription creation failed', [
+                'user_id' => $user->id,
+                'plan_slug' => $plan->slug,
+                'billing_cycle' => $request->billing_cycle,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Subscription creation failed. Please contact support.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'subscription_id' => $subscription->stripe_id,
+            'plan_slug' => $plan->slug,
+        ]);
+    }
+
+    /**
+     * List the user's saved payment methods (Billing tab on mobile).
+     */
+    public function paymentMethods(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->stripe_id) {
+            return response()->json(['data' => []]);
+        }
+
+        $defaultId = optional($user->defaultPaymentMethod())->id;
+
+        $methods = $user->paymentMethods()->map(function ($pm) use ($defaultId) {
+            return [
+                'id' => $pm->id,
+                'brand' => $pm->card->brand,
+                'last4' => $pm->card->last4,
+                'exp_month' => $pm->card->exp_month,
+                'exp_year' => $pm->card->exp_year,
+                'is_default' => $pm->id === $defaultId,
+            ];
+        })->values();
+
+        return response()->json(['data' => $methods]);
+    }
+
+    /**
+     * Set a payment method as default (Billing tab on mobile).
+     */
+    public function setDefaultPaymentMethod(Request $request)
+    {
+        $request->validate(['payment_method_id' => 'required|string']);
+
+        $user = $request->user();
+        if (!$user->stripe_id) {
+            return response()->json(['message' => 'No Stripe customer'], 422);
+        }
+
+        $user->updateDefaultPaymentMethod($request->payment_method_id);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Remove a saved payment method (Billing tab on mobile).
+     * Security: findPaymentMethod scopes to the current user's Customer.
+     */
+    public function removePaymentMethod(Request $request, $paymentMethodId)
+    {
+        $user = $request->user();
+        if (!$user->stripe_id) {
+            return response()->json(['message' => 'No Stripe customer'], 404);
+        }
+
+        $pm = $user->findPaymentMethod($paymentMethodId);
+        if (!$pm) {
+            return response()->json(['message' => 'Payment method not found'], 404);
+        }
+
+        $pm->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * List the user's Stripe invoices (Billing tab on mobile).
+     */
+    public function invoices(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->stripe_id) {
+            return response()->json(['data' => []]);
+        }
+
+        $invoices = $user->invoices()->map(function ($inv) {
+            return [
+                'id' => $inv->id,
+                'amount_paid' => $inv->amount_paid,
+                'currency' => $inv->currency,
+                'status' => $inv->status,
+                'created' => $inv->created,
+                'invoice_pdf' => $inv->invoice_pdf,
+                'period_start' => $inv->period_start,
+                'period_end' => $inv->period_end,
+            ];
+        })->values();
+
+        return response()->json(['data' => $invoices]);
+    }
+
+    /**
      * Resolve the correct Stripe Price ID for a plan, tier, and billing cycle.
      */
     private function resolveStripePriceId($plan, string $tier, string $billingCycle): ?string

@@ -158,7 +158,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/subscription/resume', [SubscriptionController::class, 'resume']);
     Route::post('/subscription/change-plan', [SubscriptionController::class, 'changePlan']);
     Route::get('/subscription/billing-history', [SubscriptionController::class, 'billingHistory']);
-    
+    // Mobile PaymentSheet — 2-step flow (web uses /checkout for Stripe-hosted redirect)
+    Route::post('/subscription/mobile-checkout', [SubscriptionController::class, 'mobileCheckout']);
+    Route::post('/subscription/mobile-confirm', [SubscriptionController::class, 'mobileConfirmSubscription']);
+    // Mobile Billing tab — payment methods + invoices
+    Route::get('/subscription/payment-methods', [SubscriptionController::class, 'paymentMethods']);
+    Route::post('/subscription/default-payment-method', [SubscriptionController::class, 'setDefaultPaymentMethod']);
+    Route::delete('/subscription/payment-methods/{id}', [SubscriptionController::class, 'removePaymentMethod']);
+    Route::get('/subscription/invoices', [SubscriptionController::class, 'invoices']);
+
     // Notifications
     Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
