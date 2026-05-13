@@ -21,6 +21,17 @@ class Profile extends Model
 
     protected $casts = [
         'is_founder' => 'boolean',
+        // Without these casts, MySQL TINYINT(1) columns serialise as
+        // integer 0/1 in JSON responses, breaking mobile zod schemas
+        // that declare z.boolean() — every /tracks/{id} fires a Sentry
+        // schema-mismatch warning otherwise. Discovered 2026-05-13
+        // post-v1.0.1 from the live console-error report.
+        'is_verified' => 'boolean',
+        // Forward-compat for BACKEND TICKET #29 (verified-reciter
+        // editorial column). When the migration adds the column, the
+        // cast is already in place so the rolling deploy can't ship a
+        // pre-cast response window.
+        'is_verified_reciter' => 'boolean',
     ];
 
     public function user(): BelongsTo
