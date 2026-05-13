@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\TrackController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\PlaylistController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\RepostController;
@@ -64,6 +65,16 @@ Route::get('/search/ai', [SearchController::class, 'aiSearch']);
 // Playlists (public read)
 Route::get('/playlists/{playlist}', [PlaylistController::class, 'show']);
 Route::get('/users/{id}/playlists', [PlaylistController::class, 'userPlaylists']);
+
+// Categories — Spotify-style browse pages (public; tap is no-op for anon users)
+// Mobile CategoryScreen + chip taps from Home + Search depend on these. Controller
+// (CategoryController) existed since session_20260507 but routes were never
+// registered — discovered 2026-05-13 from live "category empty" report.
+Route::get('/category/{slug}', [CategoryController::class, 'show']);
+Route::get('/category/{slug}/tracks', [CategoryController::class, 'tracks']);
+Route::get('/category/{slug}/artists', [CategoryController::class, 'artists']);
+Route::get('/category/{slug}/playlists', [CategoryController::class, 'playlists']);
+Route::post('/category/{slug}/tap', [CategoryController::class, 'tap']);
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
