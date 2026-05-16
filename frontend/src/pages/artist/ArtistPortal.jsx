@@ -311,6 +311,92 @@ export default function ArtistPortal() {
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: Dashboard
    ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Munshid Launchpad — first-run guided start (until first track) ── */
+function MunshidLaunchpad({ data }) {
+  const navigate = useNavigate()
+  const go = (section) => {
+    const portal = document.querySelector('main')
+    if (portal) portal.dispatchEvent(new CustomEvent('artist-nav', { detail: section }))
+  }
+  const inReview = (data.pending_count || 0) > 0
+  const steps = [
+    {
+      n: 1, icon: 'user-edit', color: T.accent,
+      title: 'Complete your Munshid profile',
+      desc: 'Add your photo, bio, languages and links so listeners know the voice behind the nasheed.',
+      cta: 'Edit profile', onClick: () => go('profile'),
+    },
+    {
+      n: 2, icon: 'cloud-upload-alt', color: T.gold,
+      title: inReview ? 'Your first nasheed is in review' : 'Upload your first nasheed',
+      desc: inReview
+        ? 'Baarak Allāhu fīk — our team is reviewing it now. You’ll be notified the moment it goes live.'
+        : 'Share your voice with the Ummah. Drop in your audio, add a cover, and let our AI suggest the details.',
+      cta: inReview ? 'Upload another' : 'Upload now',
+      onClick: () => go('content'),
+      highlight: !inReview, done: inReview,
+    },
+    {
+      n: 3, icon: 'share-alt', color: '#8b5cf6',
+      title: 'Share your page',
+      desc: 'Send your public profile to your community to gather your very first listeners.',
+      cta: 'View public page', onClick: () => navigate('/home'),
+    },
+  ]
+  return (
+    <>
+      <Card style={{
+        marginBottom: 16, padding: '28px 26px', overflow: 'hidden',
+        background: `linear-gradient(135deg, ${T.accentBg}, transparent 55%), linear-gradient(315deg, ${T.goldBg}, transparent 50%)`,
+        border: `1px solid ${T.gold}22`,
+      }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: T.gold, marginBottom: 8 }}>
+          <i className="fas fa-star-and-crescent" style={{ marginRight: 8 }} />Munshid Studio
+        </div>
+        <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', fontWeight: 800, color: T.text, margin: '0 0 6px', lineHeight: 1.2 }}>
+          Welcome — let’s publish your first nasheed
+        </h2>
+        <p style={{ fontFamily: 'Amiri, serif', fontSize: '1.15rem', color: T.gold, opacity: 0.9, margin: '0 0 10px' }}>
+          أهلًا بك في استوديو المنشد
+        </p>
+        <p style={{ fontSize: '0.92rem', color: T.textSub, margin: 0, maxWidth: 560, lineHeight: 1.6 }}>
+          Three quick steps and your voice reaches listeners across the Ummah. Your analytics, audience and AI growth tools come alive here the moment your first track is live.
+        </p>
+      </Card>
+
+      <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+        {steps.map((s) => (
+          <Card key={s.n} style={{
+            display: 'flex', alignItems: 'center', gap: 18, padding: '18px 20px', flexWrap: 'wrap',
+            border: s.highlight ? `1px solid ${T.gold}45` : `1px solid ${T.border}`,
+            background: s.highlight ? T.goldBg : T.bgCard,
+          }}>
+            <div style={{
+              width: 46, height: 46, borderRadius: 12, flexShrink: 0,
+              background: s.done ? T.greenBg : s.color + '1e',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${(s.done ? T.green : s.color)}33`,
+            }}>
+              <i className={`fas fa-${s.done ? 'check' : s.icon}`} style={{ color: s.done ? T.green : s.color, fontSize: 17 }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '0.66rem', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: T.textMuted }}>Step {s.n}</span>
+                {s.done && <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color: T.green, background: T.greenBg, border: `1px solid ${T.green}33`, borderRadius: 999, padding: '2px 8px' }}>Submitted</span>}
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: T.text, margin: '3px 0' }}>{s.title}</div>
+              <div style={{ fontSize: '0.84rem', color: T.textSub, lineHeight: 1.5 }}>{s.desc}</div>
+            </div>
+            <Btn variant={s.highlight ? 'primary' : 'secondary'} onClick={s.onClick} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+              {s.cta}<i className="fas fa-arrow-right" style={{ marginLeft: 8, fontSize: '0.7rem' }} />
+            </Btn>
+          </Card>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function DashboardSection() {
   const navigate = useNavigate()
   const [data, setData] = useState(null)
@@ -328,6 +414,7 @@ function DashboardSection() {
   const stats = data.stats || {}
   const isPro = data.is_pro
   const lifetime = data.lifetime || {}
+  const noTracks = ((lifetime.total_tracks || 0) === 0)
 
   const statCards = [
     { label: 'Plays', value: stats.plays?.count ?? 0, change: stats.plays?.change ?? 0, icon: 'play', color: T.accent },
@@ -367,6 +454,9 @@ function DashboardSection() {
         </span>
       </Card>
 
+      {noTracks && <MunshidLaunchpad data={data} />}
+
+      {!noTracks && (<>
       {/* Pro: Today's Real-time Stats */}
       {isPro && data.today && (
         <Card style={{ marginBottom: 20, background: `linear-gradient(135deg, ${T.bgCard}, #1a1f2e)`, border: `1px solid ${T.accent}20` }}>
@@ -675,6 +765,7 @@ function DashboardSection() {
           </Btn>
         </div>
       </Card>
+      </>)}
     </div>
   )
 }
