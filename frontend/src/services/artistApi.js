@@ -110,4 +110,9 @@ const artistApi = {
   },
 }
 
+// `munshidApi` is the forward name for the Munshid program. The HTTP
+// endpoints stay `/artist/*` until the backend route rename (Inc 6) — this
+// alias lets new Munshid code import `munshidApi` now with zero breakage,
+// and gives one place to flip the paths later.
+export const munshidApi = artistApi
 export default artistApi
