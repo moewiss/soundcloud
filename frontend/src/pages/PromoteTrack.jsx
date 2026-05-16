@@ -216,11 +216,11 @@ export default function PromoteTrack() {
             <i className="fas fa-crown" style={{ color: '#fff', fontSize: '1.4rem' }}></i>
           </div>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--sp-text)', margin: '0 0 8px' }}>
-            Promotions Available on Artist Plans
+            Promotions Available for Munshid
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--sp-text-muted)', margin: '0 0 20px', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
-            Track promotion is available for <strong>Artist</strong> and <strong>Artist Pro</strong> subscribers.
-            Artist Pro includes 2 free promotions per month!
+            Track promotion is available to <strong>Munshid</strong> subscribers.
+            Munshid includes 2 free promotions per month!
           </p>
           <button
             onClick={() => navigate('/pricing')}
@@ -232,7 +232,7 @@ export default function PromoteTrack() {
             }}
           >
             <i className="fas fa-arrow-up" style={{ marginRight: 8 }}></i>
-            Upgrade to Artist Plan
+            Become a Munshid
           </button>
         </div>
       )}
@@ -252,7 +252,7 @@ export default function PromoteTrack() {
               You have {freePromotionsRemaining} free promotion{freePromotionsRemaining > 1 ? 's' : ''} this month!
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--sp-text-sub)' }}>
-              Included with your Artist Pro plan
+              Included with your Munshid plan
             </div>
           </div>
         </div>
@@ -820,7 +820,7 @@ export default function PromoteTrack() {
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ textDecoration: 'line-through', color: 'var(--sp-text-muted)', fontSize: '0.85rem', marginRight: 8 }}>{formatCents(totalCostCents)}</span>
                     <span style={{ fontWeight: 700, color: 'var(--sp-green)', fontSize: '1.2rem' }}>Free</span>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--sp-text-muted)' }}>Artist Pro perk</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--sp-text-muted)' }}>Munshid perk</div>
                   </div>
                 ) : (
                   <span style={{ fontWeight: 700, color: 'var(--sp-gold, #C9A24D)', fontSize: '1.3rem' }}>{formatCents(totalCostCents)}</span>

@@ -353,7 +353,7 @@ export default function Wallet() {
         )}
       </div>
 
-      {/* Withdraw Section (Artist Only) */}
+      {/* Withdraw Section (Munshid Only) */}
       {isArtist && showWithdrawForm && (
         <div style={{
           borderRadius: 14, padding: '20px',
@@ -651,7 +651,7 @@ export default function Wallet() {
               </div>
               <div style={{ fontSize: '0.73rem', color: 'var(--sp-text-sub)', lineHeight: 1.5 }}>
                 Listener wallets are for spending within Nashidify (subscriptions, tips, gifts, and purchases).
-                To earn and withdraw funds, upgrade to an Artist plan.
+                To earn and withdraw funds, become a Munshid.
               </div>
               <button
                 onClick={() => navigate('/pricing')}
@@ -662,7 +662,7 @@ export default function Wallet() {
                   fontSize: '0.78rem', cursor: 'pointer',
                 }}
               >
-                View Artist Plans
+                Become a Munshid
               </button>
             </div>
           </div>
