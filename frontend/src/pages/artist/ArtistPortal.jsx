@@ -3173,16 +3173,33 @@ function OnboardingFlow({ state, onComplete }) {
 
         {/* Step 1: Welcome */}
         {step === 1 && (
-          <Card style={{ textAlign: 'center', padding: '48px 32px' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 16 }}>
-              <i className="fas fa-mosque" style={{ color: T.accent }}></i>
+          <Card style={{ textAlign: 'center', padding: '44px 32px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: T.gold, marginBottom: 10 }}>
+              <i className="fas fa-star-and-crescent" style={{ marginRight: 8 }} />Munshid Studio
             </div>
-            <h1 style={{ fontSize: '1.3rem', fontWeight: 700, color: T.text, marginBottom: 12 }}>Welcome to the Nashidify Munshid Portal</h1>
-            <p style={{ fontSize: '0.9rem', color: T.textSub, lineHeight: 1.7, marginBottom: 8 }}>
-              Share your Islamic content with a global audience. Upload nasheeds, Quran recitations,
-              lectures, podcasts, and more.
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: T.text, marginBottom: 6 }}>Welcome to Nashidify</h1>
+            <p style={{ fontFamily: 'Amiri, serif', fontSize: '1.2rem', color: T.gold, opacity: 0.9, margin: '0 0 14px' }}>أهلًا بك في استوديو المنشد</p>
+            <p style={{ fontSize: '0.9rem', color: T.textSub, lineHeight: 1.7, marginBottom: 20, maxWidth: 440, marginLeft: 'auto', marginRight: 'auto' }}>
+              Share your nasheeds, Quran, lectures and podcasts with a global Muslim audience — and grow with tools built for you.
             </p>
-            <p style={{ fontSize: '0.85rem', color: T.gold, fontStyle: 'italic', marginBottom: 28 }}>Bismillahir Rahmanir Raheem</p>
+            <div style={{ display: 'grid', gap: 10, textAlign: 'left', maxWidth: 380, margin: '0 auto 24px' }}>
+              {[
+                { icon: 'globe', t: 'Reach the Ummah', d: 'Listeners worldwide discover your work' },
+                { icon: 'wand-magic-sparkles', t: 'AI growth tools', d: 'Coaching, discovery boost & assisted uploads' },
+                { icon: 'chart-line', t: 'Real-time analytics', d: 'Your plays, audience and milestones, live' },
+              ].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 9, background: T.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <i className={`fas fa-${f.icon}`} style={{ color: T.accent, fontSize: 13 }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: T.text }}>{f.t}</div>
+                    <div style={{ fontSize: '0.76rem', color: T.textMuted, marginTop: 1 }}>{f.d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.82rem', color: T.gold, fontStyle: 'italic', marginBottom: 22 }}>Bismillāhir Raḥmānir Raḥīm</p>
             <Btn onClick={handleNext} disabled={loading} style={{ padding: '12px 36px', fontSize: '0.9rem' }}>
               Get Started <i className="fas fa-arrow-right" style={{ marginLeft: 8 }}></i>
             </Btn>
@@ -3300,7 +3317,7 @@ function OnboardingFlow({ state, onComplete }) {
             </div>
             <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: T.text, marginBottom: 12 }}>Congratulations!</h2>
             <p style={{ fontSize: '0.9rem', color: T.textSub, lineHeight: 1.7, marginBottom: 8 }}>
-              Your artist portal is all set up. You are ready to share your Islamic content
+              Your Munshid Studio is all set up. You’re ready to share your voice
               with the Nashidify community.
             </p>
             <p style={{ fontSize: '0.85rem', color: T.gold, fontStyle: 'italic', marginBottom: 28 }}>
