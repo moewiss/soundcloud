@@ -93,6 +93,12 @@ const artistApi = {
     return res.data
   },
 
+  // AI-assisted upload (Munshid) — suggest title/category/moods/tags
+  aiSuggestMetadata: async (payload) => {
+    const res = await ax.post('/artist/ai-suggest-metadata', payload)
+    return res.data
+  },
+
   // Onboarding
   getOnboardingState: async () => {
     const res = await ax.get('/artist/onboarding/state')
