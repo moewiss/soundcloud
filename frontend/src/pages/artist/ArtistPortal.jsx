@@ -2602,6 +2602,42 @@ function UploadForm({ track, onSuccess, onCancel }) {
   const [coverFile, setCoverFile] = useState(null)
   const [audioInfo, setAudioInfo] = useState(null)
   const [coverPreview, setCoverPreview] = useState(track?.cover_url || null)
+  const [aiBusy, setAiBusy] = useState(false)
+
+  // AI-assisted upload (Munshid): suggest title/category/tags/description
+  // from the current draft + audio filename. Backend is live.
+  const aiSuggest = async () => {
+    if (!form.title.trim() && !audioFile?.name) {
+      toast('Add a title or pick an audio file first', { icon: 'i' })
+      return
+    }
+    setAiBusy(true)
+    try {
+      const r = await artistApi.aiSuggestMetadata({
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        filename: audioFile?.name || '',
+      })
+      if (r?.is_pro === false) { toast('AI-assisted upload is a Munshid feature', { icon: 'i' }); return }
+      const s = r?.suggestion
+      if (!s || (!s.title && !s.category && !s.description && !(s.tags && s.tags.length))) {
+        toast('No suggestions right now — try after adding more detail'); return
+      }
+      setForm(prev => ({
+        ...prev,
+        title: s.title || prev.title,
+        category: CATEGORIES.includes(s.category) ? s.category : prev.category,
+        description: s.description || prev.description,
+        tags: Array.isArray(s.tags) && s.tags.length ? s.tags.join(', ') : prev.tags,
+      }))
+      toast.success('AI suggestions applied — review before publishing')
+    } catch {
+      toast.error('Could not get AI suggestions')
+    } finally {
+      setAiBusy(false)
+    }
+  }
   const [submitting, setSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
@@ -2786,6 +2822,17 @@ function UploadForm({ track, onSuccess, onCancel }) {
       )}
 
       {/* Metadata fields */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+        <button type="button" onClick={aiSuggest} disabled={aiBusy} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 999,
+          border: '1px solid rgba(232,101,58,0.35)', background: 'rgba(232,101,58,0.10)', color: '#E8653A',
+          fontWeight: 700, fontSize: '0.78rem', cursor: aiBusy ? 'default' : 'pointer', opacity: aiBusy ? 0.6 : 1,
+          fontFamily: 'inherit',
+        }}>
+          <i className={`fas ${aiBusy ? 'fa-circle-notch fa-spin' : 'fa-wand-magic-sparkles'}`} />
+          {aiBusy ? 'Asking AI…' : 'AI suggest'}
+        </button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <Input label="Title *" value={form.title} onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Track title" />
         <Select label="Category" value={form.category} onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}>
