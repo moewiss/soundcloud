@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import artistApi from '../../services/artistApi'
 import { api } from '../../services/api'
+import { tierName, isMunshid } from '../../lib/tierDisplay'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   NASHIDIFY ARTIST PORTAL — Standalone
+   NASHIDIFY MUNSHID PORTAL — Standalone
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // ─── Theme — Nashidify Emerald & Gold ───
@@ -119,7 +120,7 @@ const ChipSelect = ({ options, selected, onChange, labels }) => (
 
 const CATEGORIES = ['Quran', 'Nasheed', 'Podcast', 'Lecture', 'Islamic Education', 'Dua', 'Adhkar', 'Children', 'Wedding', 'Other']
 const CREATOR_TYPES = ['reciter', 'nasheed_artist', 'podcaster', 'lecturer', 'scholar', 'poet']
-const CREATOR_TYPE_LABELS = { reciter: 'Quran Reciter', nasheed_artist: 'Nasheed Artist', podcaster: 'Podcaster', lecturer: 'Lecturer', scholar: 'Scholar', poet: 'Poet' }
+const CREATOR_TYPE_LABELS = { reciter: 'Quran Reciter', nasheed_artist: 'Munshid', podcaster: 'Podcaster', lecturer: 'Lecturer', scholar: 'Scholar', poet: 'Poet' }
 const LANGUAGES = ['ar', 'en', 'ur', 'tr', 'ms', 'id', 'fr', 'so', 'bn', 'fa']
 const LANGUAGE_LABELS = { ar: 'Arabic', en: 'English', ur: 'Urdu', tr: 'Turkish', ms: 'Malay', id: 'Indonesian', fr: 'French', so: 'Somali', bn: 'Bengali', fa: 'Persian' }
 const SOCIAL_KEYS = ['instagram', 'youtube', 'twitter', 'tiktok', 'website']
@@ -174,7 +175,7 @@ export default function ArtistPortal() {
     return (
       <div style={{ height: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, fontFamily: 'var(--font-sans, Inter, sans-serif)' }}>
         <img src="/hero-logo.png" alt="" style={{ width: 48, height: 48, opacity: 0.6 }} />
-        <div style={{ color: T.textMuted, fontSize: '0.85rem' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8, color: T.accent }}></i>Loading Artist Studio...</div>
+        <div style={{ color: T.textMuted, fontSize: '0.85rem' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8, color: T.accent }}></i>Loading Munshid Studio...</div>
       </div>
     )
   }
@@ -218,11 +219,11 @@ export default function ArtistPortal() {
         }}>
           {(() => {
             const u = JSON.parse(localStorage.getItem('user') || '{}')
-            const isPro = u.plan_slug === 'artist_pro'
+            const isPro = isMunshid(u.plan_slug)
             return sidebarOpen ? (
               <div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: T.gold, letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: 1.2 }}>
-                  Artist Studio{isPro && <span style={{ fontSize: '0.55rem', marginLeft: 6, padding: '2px 5px', borderRadius: 4, background: T.goldBg, color: T.gold, verticalAlign: 'middle', fontWeight: 700, letterSpacing: '0.04em' }}>PRO</span>}
+                  Munshid Studio{isPro && <span style={{ fontSize: '0.55rem', marginLeft: 6, padding: '2px 5px', borderRadius: 4, background: T.goldBg, color: T.gold, verticalAlign: 'middle', fontWeight: 700, letterSpacing: '0.04em' }}>PRO</span>}
                 </div>
                 <div style={{ fontSize: '0.6rem', color: T.textMuted, marginTop: 2 }}>Sound that reminds</div>
               </div>
@@ -362,7 +363,7 @@ function DashboardSection() {
           border: `1px solid ${isPro ? T.gold : T.accent}30`,
         }}>
           <i className={`fas fa-${isPro ? 'crown' : 'palette'}`} style={{ marginRight: 5, fontSize: 10 }} />
-          {data.plan === 'artist_pro' ? 'Artist Pro' : data.plan === 'artist' ? 'Artist' : data.plan || 'Artist'}
+          {tierName(data.plan)}
         </span>
       </Card>
 
@@ -790,7 +791,7 @@ function ProGate({ children, title, isPro }) {
       }}>
         <i className="fas fa-lock" style={{ fontSize: 22, color: T.gold, marginBottom: 10 }} />
         <span style={{ color: T.text, fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
-        <span style={{ color: T.textMuted, fontSize: '0.75rem', marginTop: 3 }}>Upgrade to Artist Pro</span>
+        <span style={{ color: T.textMuted, fontSize: '0.75rem', marginTop: 3 }}>Become a Munshid</span>
         <Btn variant="gold" style={{ marginTop: 14, fontSize: '0.78rem', padding: '7px 20px' }} onClick={() => navigate('/pricing')}>
           Upgrade
         </Btn>
@@ -1899,7 +1900,7 @@ function AudienceSection() {
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: T.text, marginBottom: 4 }}>Activity Heatmap</div>
           <div style={{ fontSize: '0.75rem', color: T.textMuted, marginBottom: 14 }}>See when your audience listens most</div>
           <Btn variant="gold" style={{ fontSize: '0.75rem', padding: '7px 18px' }} onClick={() => navigate('/pricing')}>
-            Upgrade to Artist Pro
+            Become a Munshid
           </Btn>
         </Card>
       )}
@@ -1959,7 +1960,7 @@ function AudienceSection() {
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: T.text, marginBottom: 4 }}>AI Audience Intelligence</div>
           <div style={{ fontSize: '0.75rem', color: T.textMuted, marginBottom: 14, maxWidth: 320, margin: '0 auto 14px' }}>Get AI-powered audience health scores, growth strategies, and engagement insights</div>
           <Btn variant="gold" style={{ fontSize: '0.75rem', padding: '7px 18px' }} onClick={() => navigate('/pricing')}>
-            Upgrade to Artist Pro
+            Become a Munshid
           </Btn>
         </Card>
       )}
@@ -2922,7 +2923,7 @@ function OnboardingFlow({ state, onComplete }) {
             <div style={{ fontSize: '2rem', marginBottom: 16 }}>
               <i className="fas fa-mosque" style={{ color: T.accent }}></i>
             </div>
-            <h1 style={{ fontSize: '1.3rem', fontWeight: 700, color: T.text, marginBottom: 12 }}>Welcome to the Nashidify Artist Portal</h1>
+            <h1 style={{ fontSize: '1.3rem', fontWeight: 700, color: T.text, marginBottom: 12 }}>Welcome to the Nashidify Munshid Portal</h1>
             <p style={{ fontSize: '0.9rem', color: T.textSub, lineHeight: 1.7, marginBottom: 8 }}>
               Share your Islamic content with a global audience. Upload nasheeds, Quran recitations,
               lectures, podcasts, and more.
