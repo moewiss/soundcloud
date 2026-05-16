@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import artistApi from '../../services/artistApi'
 import { api } from '../../services/api'
+import { tierName, isMunshid } from '../../lib/tierDisplay'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   NASHIDIFY ARTIST PORTAL — Standalone
+   NASHIDIFY MUNSHID PORTAL — Standalone
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // ─── Theme — Nashidify Emerald & Gold ───
@@ -119,7 +120,7 @@ const ChipSelect = ({ options, selected, onChange, labels }) => (
 
 const CATEGORIES = ['Quran', 'Nasheed', 'Podcast', 'Lecture', 'Islamic Education', 'Dua', 'Adhkar', 'Children', 'Wedding', 'Other']
 const CREATOR_TYPES = ['reciter', 'nasheed_artist', 'podcaster', 'lecturer', 'scholar', 'poet']
-const CREATOR_TYPE_LABELS = { reciter: 'Quran Reciter', nasheed_artist: 'Nasheed Artist', podcaster: 'Podcaster', lecturer: 'Lecturer', scholar: 'Scholar', poet: 'Poet' }
+const CREATOR_TYPE_LABELS = { reciter: 'Quran Reciter', nasheed_artist: 'Munshid', podcaster: 'Podcaster', lecturer: 'Lecturer', scholar: 'Scholar', poet: 'Poet' }
 const LANGUAGES = ['ar', 'en', 'ur', 'tr', 'ms', 'id', 'fr', 'so', 'bn', 'fa']
 const LANGUAGE_LABELS = { ar: 'Arabic', en: 'English', ur: 'Urdu', tr: 'Turkish', ms: 'Malay', id: 'Indonesian', fr: 'French', so: 'Somali', bn: 'Bengali', fa: 'Persian' }
 const SOCIAL_KEYS = ['instagram', 'youtube', 'twitter', 'tiktok', 'website']
@@ -174,7 +175,7 @@ export default function ArtistPortal() {
     return (
       <div style={{ height: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, fontFamily: 'var(--font-sans, Inter, sans-serif)' }}>
         <img src="/hero-logo.png" alt="" style={{ width: 48, height: 48, opacity: 0.6 }} />
-        <div style={{ color: T.textMuted, fontSize: '0.85rem' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8, color: T.accent }}></i>Loading Artist Studio...</div>
+        <div style={{ color: T.textMuted, fontSize: '0.85rem' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8, color: T.accent }}></i>Loading Munshid Studio...</div>
       </div>
     )
   }
@@ -218,11 +219,11 @@ export default function ArtistPortal() {
         }}>
           {(() => {
             const u = JSON.parse(localStorage.getItem('user') || '{}')
-            const isPro = u.plan_slug === 'artist_pro'
+            const isPro = isMunshid(u.plan_slug)
             return sidebarOpen ? (
               <div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: T.gold, letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: 1.2 }}>
-                  Artist Studio{isPro && <span style={{ fontSize: '0.55rem', marginLeft: 6, padding: '2px 5px', borderRadius: 4, background: T.goldBg, color: T.gold, verticalAlign: 'middle', fontWeight: 700, letterSpacing: '0.04em' }}>PRO</span>}
+                  Munshid Studio{isPro && <span style={{ fontSize: '0.55rem', marginLeft: 6, padding: '2px 5px', borderRadius: 4, background: T.goldBg, color: T.gold, verticalAlign: 'middle', fontWeight: 700, letterSpacing: '0.04em' }}>PRO</span>}
                 </div>
                 <div style={{ fontSize: '0.6rem', color: T.textMuted, marginTop: 2 }}>Sound that reminds</div>
               </div>
@@ -310,6 +311,92 @@ export default function ArtistPortal() {
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: Dashboard
    ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Munshid Launchpad — first-run guided start (until first track) ── */
+function MunshidLaunchpad({ data }) {
+  const navigate = useNavigate()
+  const go = (section) => {
+    const portal = document.querySelector('main')
+    if (portal) portal.dispatchEvent(new CustomEvent('artist-nav', { detail: section }))
+  }
+  const inReview = (data.pending_count || 0) > 0
+  const steps = [
+    {
+      n: 1, icon: 'user-edit', color: T.accent,
+      title: 'Complete your Munshid profile',
+      desc: 'Add your photo, bio, languages and links so listeners know the voice behind the nasheed.',
+      cta: 'Edit profile', onClick: () => go('profile'),
+    },
+    {
+      n: 2, icon: 'cloud-upload-alt', color: T.gold,
+      title: inReview ? 'Your first nasheed is in review' : 'Upload your first nasheed',
+      desc: inReview
+        ? 'Baarak Allāhu fīk — our team is reviewing it now. You’ll be notified the moment it goes live.'
+        : 'Share your voice with the Ummah. Drop in your audio, add a cover, and let our AI suggest the details.',
+      cta: inReview ? 'Upload another' : 'Upload now',
+      onClick: () => go('content'),
+      highlight: !inReview, done: inReview,
+    },
+    {
+      n: 3, icon: 'share-alt', color: '#8b5cf6',
+      title: 'Share your page',
+      desc: 'Send your public profile to your community to gather your very first listeners.',
+      cta: 'View public page', onClick: () => navigate('/home'),
+    },
+  ]
+  return (
+    <>
+      <Card style={{
+        marginBottom: 16, padding: '28px 26px', overflow: 'hidden',
+        background: `linear-gradient(135deg, ${T.accentBg}, transparent 55%), linear-gradient(315deg, ${T.goldBg}, transparent 50%)`,
+        border: `1px solid ${T.gold}22`,
+      }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: T.gold, marginBottom: 8 }}>
+          <i className="fas fa-star-and-crescent" style={{ marginRight: 8 }} />Munshid Studio
+        </div>
+        <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', fontWeight: 800, color: T.text, margin: '0 0 6px', lineHeight: 1.2 }}>
+          Welcome — let’s publish your first nasheed
+        </h2>
+        <p style={{ fontFamily: 'Amiri, serif', fontSize: '1.15rem', color: T.gold, opacity: 0.9, margin: '0 0 10px' }}>
+          أهلًا بك في استوديو المنشد
+        </p>
+        <p style={{ fontSize: '0.92rem', color: T.textSub, margin: 0, maxWidth: 560, lineHeight: 1.6 }}>
+          Three quick steps and your voice reaches listeners across the Ummah. Your analytics, audience and AI growth tools come alive here the moment your first track is live.
+        </p>
+      </Card>
+
+      <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+        {steps.map((s) => (
+          <Card key={s.n} style={{
+            display: 'flex', alignItems: 'center', gap: 18, padding: '18px 20px', flexWrap: 'wrap',
+            border: s.highlight ? `1px solid ${T.gold}45` : `1px solid ${T.border}`,
+            background: s.highlight ? T.goldBg : T.bgCard,
+          }}>
+            <div style={{
+              width: 46, height: 46, borderRadius: 12, flexShrink: 0,
+              background: s.done ? T.greenBg : s.color + '1e',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${(s.done ? T.green : s.color)}33`,
+            }}>
+              <i className={`fas fa-${s.done ? 'check' : s.icon}`} style={{ color: s.done ? T.green : s.color, fontSize: 17 }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '0.66rem', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: T.textMuted }}>Step {s.n}</span>
+                {s.done && <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color: T.green, background: T.greenBg, border: `1px solid ${T.green}33`, borderRadius: 999, padding: '2px 8px' }}>Submitted</span>}
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: T.text, margin: '3px 0' }}>{s.title}</div>
+              <div style={{ fontSize: '0.84rem', color: T.textSub, lineHeight: 1.5 }}>{s.desc}</div>
+            </div>
+            <Btn variant={s.highlight ? 'primary' : 'secondary'} onClick={s.onClick} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+              {s.cta}<i className="fas fa-arrow-right" style={{ marginLeft: 8, fontSize: '0.7rem' }} />
+            </Btn>
+          </Card>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function DashboardSection() {
   const navigate = useNavigate()
   const [data, setData] = useState(null)
@@ -327,6 +414,7 @@ function DashboardSection() {
   const stats = data.stats || {}
   const isPro = data.is_pro
   const lifetime = data.lifetime || {}
+  const noTracks = ((lifetime.total_tracks || 0) === 0)
 
   const statCards = [
     { label: 'Plays', value: stats.plays?.count ?? 0, change: stats.plays?.change ?? 0, icon: 'play', color: T.accent },
@@ -362,10 +450,13 @@ function DashboardSection() {
           border: `1px solid ${isPro ? T.gold : T.accent}30`,
         }}>
           <i className={`fas fa-${isPro ? 'crown' : 'palette'}`} style={{ marginRight: 5, fontSize: 10 }} />
-          {data.plan === 'artist_pro' ? 'Artist Pro' : data.plan === 'artist' ? 'Artist' : data.plan || 'Artist'}
+          {tierName(data.plan)}
         </span>
       </Card>
 
+      {noTracks && <MunshidLaunchpad data={data} />}
+
+      {!noTracks && (<>
       {/* Pro: Today's Real-time Stats */}
       {isPro && data.today && (
         <Card style={{ marginBottom: 20, background: `linear-gradient(135deg, ${T.bgCard}, #1a1f2e)`, border: `1px solid ${T.accent}20` }}>
@@ -674,6 +765,7 @@ function DashboardSection() {
           </Btn>
         </div>
       </Card>
+      </>)}
     </div>
   )
 }
@@ -774,6 +866,116 @@ function MiniBarChart({ items = [], color = T.accent, maxItems = 10 }) {
   )
 }
 
+/* ── AI Growth Coach (Munshid) — personal growth plan from analytics ── */
+function GrowthCoachCard({ period }) {
+  const [st2, setSt2] = useState({ loading: true, coach: null, isPro: true })
+  useEffect(() => {
+    let alive = true
+    setSt2(s => ({ ...s, loading: true }))
+    artistApi.getGrowthCoach(period)
+      .then(r => { if (alive) setSt2({ loading: false, coach: r?.coach || null, isPro: r?.is_pro !== false }) })
+      .catch(() => { if (alive) setSt2({ loading: false, coach: null, isPro: true }) })
+    return () => { alive = false }
+  }, [period])
+  const { loading, coach, isPro } = st2
+  const prio = p => (p === 'high' ? '#ef4444' : p === 'medium' ? '#f59e0b' : T.accent)
+  return (
+    <Card style={{ marginBottom: 18, borderColor: 'rgba(197,164,73,0.30)', background: 'linear-gradient(135deg, rgba(197,164,73,0.09), transparent 60%)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <i className="fas fa-graduation-cap" style={{ color: T.gold }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: T.gold }}>AI Growth Coach</span>
+        <span style={{ fontFamily: 'Amiri, serif', fontSize: '0.95rem', color: T.gold, opacity: 0.85 }}>مدرّب النمو</span>
+      </div>
+      {loading ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8 }} />Analyzing your growth…</p>
+      ) : !isPro ? (
+        <p style={{ color: T.textSub, fontSize: '0.85rem', margin: '8px 0' }}>The AI Growth Coach is a <strong style={{ color: T.gold }}>Munshid</strong> feature — a personal plan to grow your audience.</p>
+      ) : !coach || !coach.headline ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}>Your coaching plan appears here as your activity grows — keep publishing consistently.</p>
+      ) : (
+        <>
+          <h3 style={{ fontSize: '1.05rem', color: T.text, margin: '6px 0 4px' }}>{coach.headline}</h3>
+          {coach.focus && <div style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, color: T.gold, background: 'rgba(197,164,73,0.14)', border: '1px solid rgba(197,164,73,0.28)', borderRadius: 999, padding: '3px 10px', margin: '4px 0 12px' }}>Focus: {coach.focus}</div>}
+          <div style={{ display: 'grid', gap: 8 }}>
+            {(coach.steps || []).map((s, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
+                <span style={{ width: 6, borderRadius: 3, background: prio(s.priority), flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: T.text }}>{s.title}</div>
+                  {s.why && <div style={{ fontSize: '0.78rem', color: T.textMuted, marginTop: 2 }}>{s.why}</div>}
+                  {s.action && <div style={{ fontSize: '0.82rem', color: T.accentLight, marginTop: 4 }}><i className="fas fa-arrow-right" style={{ marginRight: 6, fontSize: '0.7rem' }} />{s.action}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {coach.encouragement && <p style={{ fontSize: '0.82rem', color: T.textSub, fontStyle: 'italic', marginTop: 12, marginBottom: 0 }}>{coach.encouragement}</p>}
+        </>
+      )}
+    </Card>
+  )
+}
+
+function DiscoveryBoostCard({ period }) {
+  const [st3, setSt3] = useState({ loading: true, boost: null, isPro: true })
+  useEffect(() => {
+    let alive = true
+    setSt3(s => ({ ...s, loading: true }))
+    artistApi.getDiscoveryBoost(period)
+      .then(r => { if (alive) setSt3({ loading: false, boost: r?.boost || null, isPro: r?.is_pro !== false }) })
+      .catch(() => { if (alive) setSt3({ loading: false, boost: null, isPro: true }) })
+    return () => { alive = false }
+  }, [period])
+  const { loading, boost, isPro } = st3
+  return (
+    <Card style={{ marginBottom: 18, borderColor: 'rgba(197,164,73,0.30)', background: 'linear-gradient(135deg, rgba(197,164,73,0.09), transparent 60%)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <i className="fas fa-bullseye" style={{ color: T.gold }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: T.gold }}>AI Discovery Boost</span>
+        <span style={{ fontFamily: 'Amiri, serif', fontSize: '0.95rem', color: T.gold, opacity: 0.85 }}>توسيع الوصول</span>
+      </div>
+      {loading ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8 }} />Finding new listeners for you…</p>
+      ) : !isPro ? (
+        <p style={{ color: T.textSub, fontSize: '0.85rem', margin: '8px 0' }}>AI Discovery Boost is a <strong style={{ color: T.gold }}>Munshid</strong> feature — find where your work can reach more of the right listeners.</p>
+      ) : !boost || (!boost.summary && !(boost.opportunities || []).length) ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}>Discovery suggestions appear here as your catalogue grows — keep publishing and tagging your work well.</p>
+      ) : (
+        <>
+          {boost.summary && <p style={{ fontSize: '0.92rem', color: T.text, margin: '6px 0 10px', lineHeight: 1.55 }}>{boost.summary}</p>}
+          {boost.best_track && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(197,164,73,0.12)', border: '1px solid rgba(197,164,73,0.28)', marginBottom: 12 }}>
+              <i className="fas fa-star" style={{ color: T.gold, marginTop: 3, fontSize: '0.8rem' }} />
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: T.gold }}>Worth promoting</div>
+                <div style={{ fontSize: '0.88rem', color: T.text, marginTop: 2 }}>{boost.best_track}</div>
+              </div>
+            </div>
+          )}
+          <div style={{ display: 'grid', gap: 8 }}>
+            {(boost.opportunities || []).map((o, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
+                <span style={{ width: 6, borderRadius: 3, background: T.gold, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: T.text }}>{o.audience}</div>
+                  {o.why && <div style={{ fontSize: '0.78rem', color: T.textMuted, marginTop: 2 }}>{o.why}</div>}
+                  {o.action && <div style={{ fontSize: '0.82rem', color: T.accentLight, marginTop: 4 }}><i className="fas fa-arrow-right" style={{ marginRight: 6, fontSize: '0.7rem' }} />{o.action}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {(boost.suggested_categories || []).length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+              {(boost.suggested_categories || []).map((c, i) => (
+                <span key={i} style={{ fontSize: '0.74rem', fontWeight: 600, color: T.gold, background: 'rgba(197,164,73,0.14)', border: '1px solid rgba(197,164,73,0.28)', borderRadius: 999, padding: '3px 10px' }}>{c}</span>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
 /* ── Pro Gate — blurred overlay for locked sections ── */
 function ProGate({ children, title, isPro }) {
   const navigate = useNavigate()
@@ -790,7 +992,7 @@ function ProGate({ children, title, isPro }) {
       }}>
         <i className="fas fa-lock" style={{ fontSize: 22, color: T.gold, marginBottom: 10 }} />
         <span style={{ color: T.text, fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
-        <span style={{ color: T.textMuted, fontSize: '0.75rem', marginTop: 3 }}>Upgrade to Artist Pro</span>
+        <span style={{ color: T.textMuted, fontSize: '0.75rem', marginTop: 3 }}>Become a Munshid</span>
         <Btn variant="gold" style={{ marginTop: 14, fontSize: '0.78rem', padding: '7px 20px' }} onClick={() => navigate('/pricing')}>
           Upgrade
         </Btn>
@@ -1030,6 +1232,12 @@ function AnalyticsSection() {
           ))}
         </div>
       </div>
+
+      {/* ═══ AI GROWTH COACH (Munshid) ═══ */}
+      <GrowthCoachCard period={period} />
+
+      {/* ═══ AI DISCOVERY BOOST (Munshid) ═══ */}
+      <DiscoveryBoostCard period={period} />
 
       {/* ═══ AI PERFORMANCE SCORE (Pro) ═══ */}
       {isPro && aiSummary.score > 0 && (
@@ -1899,7 +2107,7 @@ function AudienceSection() {
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: T.text, marginBottom: 4 }}>Activity Heatmap</div>
           <div style={{ fontSize: '0.75rem', color: T.textMuted, marginBottom: 14 }}>See when your audience listens most</div>
           <Btn variant="gold" style={{ fontSize: '0.75rem', padding: '7px 18px' }} onClick={() => navigate('/pricing')}>
-            Upgrade to Artist Pro
+            Become a Munshid
           </Btn>
         </Card>
       )}
@@ -1959,7 +2167,7 @@ function AudienceSection() {
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: T.text, marginBottom: 4 }}>AI Audience Intelligence</div>
           <div style={{ fontSize: '0.75rem', color: T.textMuted, marginBottom: 14, maxWidth: 320, margin: '0 auto 14px' }}>Get AI-powered audience health scores, growth strategies, and engagement insights</div>
           <Btn variant="gold" style={{ fontSize: '0.75rem', padding: '7px 18px' }} onClick={() => navigate('/pricing')}>
-            Upgrade to Artist Pro
+            Become a Munshid
           </Btn>
         </Card>
       )}
@@ -2549,6 +2757,42 @@ function UploadForm({ track, onSuccess, onCancel }) {
   const [coverFile, setCoverFile] = useState(null)
   const [audioInfo, setAudioInfo] = useState(null)
   const [coverPreview, setCoverPreview] = useState(track?.cover_url || null)
+  const [aiBusy, setAiBusy] = useState(false)
+
+  // AI-assisted upload (Munshid): suggest title/category/tags/description
+  // from the current draft + audio filename. Backend is live.
+  const aiSuggest = async () => {
+    if (!form.title.trim() && !audioFile?.name) {
+      toast('Add a title or pick an audio file first', { icon: 'i' })
+      return
+    }
+    setAiBusy(true)
+    try {
+      const r = await artistApi.aiSuggestMetadata({
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        filename: audioFile?.name || '',
+      })
+      if (r?.is_pro === false) { toast('AI-assisted upload is a Munshid feature', { icon: 'i' }); return }
+      const s = r?.suggestion
+      if (!s || (!s.title && !s.category && !s.description && !(s.tags && s.tags.length))) {
+        toast('No suggestions right now — try after adding more detail'); return
+      }
+      setForm(prev => ({
+        ...prev,
+        title: s.title || prev.title,
+        category: CATEGORIES.includes(s.category) ? s.category : prev.category,
+        description: s.description || prev.description,
+        tags: Array.isArray(s.tags) && s.tags.length ? s.tags.join(', ') : prev.tags,
+      }))
+      toast.success('AI suggestions applied — review before publishing')
+    } catch {
+      toast.error('Could not get AI suggestions')
+    } finally {
+      setAiBusy(false)
+    }
+  }
   const [submitting, setSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
@@ -2733,6 +2977,17 @@ function UploadForm({ track, onSuccess, onCancel }) {
       )}
 
       {/* Metadata fields */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+        <button type="button" onClick={aiSuggest} disabled={aiBusy} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 999,
+          border: '1px solid rgba(197,164,73,0.38)', background: 'rgba(197,164,73,0.12)', color: T.gold,
+          fontWeight: 700, fontSize: '0.78rem', cursor: aiBusy ? 'default' : 'pointer', opacity: aiBusy ? 0.6 : 1,
+          fontFamily: 'inherit',
+        }}>
+          <i className={`fas ${aiBusy ? 'fa-circle-notch fa-spin' : 'fa-wand-magic-sparkles'}`} />
+          {aiBusy ? 'Asking AI…' : 'AI suggest'}
+        </button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <Input label="Title *" value={form.title} onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Track title" />
         <Select label="Category" value={form.category} onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}>
@@ -2918,16 +3173,33 @@ function OnboardingFlow({ state, onComplete }) {
 
         {/* Step 1: Welcome */}
         {step === 1 && (
-          <Card style={{ textAlign: 'center', padding: '48px 32px' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 16 }}>
-              <i className="fas fa-mosque" style={{ color: T.accent }}></i>
+          <Card style={{ textAlign: 'center', padding: '44px 32px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: T.gold, marginBottom: 10 }}>
+              <i className="fas fa-star-and-crescent" style={{ marginRight: 8 }} />Munshid Studio
             </div>
-            <h1 style={{ fontSize: '1.3rem', fontWeight: 700, color: T.text, marginBottom: 12 }}>Welcome to the Nashidify Artist Portal</h1>
-            <p style={{ fontSize: '0.9rem', color: T.textSub, lineHeight: 1.7, marginBottom: 8 }}>
-              Share your Islamic content with a global audience. Upload nasheeds, Quran recitations,
-              lectures, podcasts, and more.
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: T.text, marginBottom: 6 }}>Welcome to Nashidify</h1>
+            <p style={{ fontFamily: 'Amiri, serif', fontSize: '1.2rem', color: T.gold, opacity: 0.9, margin: '0 0 14px' }}>أهلًا بك في استوديو المنشد</p>
+            <p style={{ fontSize: '0.9rem', color: T.textSub, lineHeight: 1.7, marginBottom: 20, maxWidth: 440, marginLeft: 'auto', marginRight: 'auto' }}>
+              Share your nasheeds, Quran, lectures and podcasts with a global Muslim audience — and grow with tools built for you.
             </p>
-            <p style={{ fontSize: '0.85rem', color: T.gold, fontStyle: 'italic', marginBottom: 28 }}>Bismillahir Rahmanir Raheem</p>
+            <div style={{ display: 'grid', gap: 10, textAlign: 'left', maxWidth: 380, margin: '0 auto 24px' }}>
+              {[
+                { icon: 'globe', t: 'Reach the Ummah', d: 'Listeners worldwide discover your work' },
+                { icon: 'wand-magic-sparkles', t: 'AI growth tools', d: 'Coaching, discovery boost & assisted uploads' },
+                { icon: 'chart-line', t: 'Real-time analytics', d: 'Your plays, audience and milestones, live' },
+              ].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 9, background: T.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <i className={`fas fa-${f.icon}`} style={{ color: T.accent, fontSize: 13 }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: T.text }}>{f.t}</div>
+                    <div style={{ fontSize: '0.76rem', color: T.textMuted, marginTop: 1 }}>{f.d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.82rem', color: T.gold, fontStyle: 'italic', marginBottom: 22 }}>Bismillāhir Raḥmānir Raḥīm</p>
             <Btn onClick={handleNext} disabled={loading} style={{ padding: '12px 36px', fontSize: '0.9rem' }}>
               Get Started <i className="fas fa-arrow-right" style={{ marginLeft: 8 }}></i>
             </Btn>
@@ -3045,7 +3317,7 @@ function OnboardingFlow({ state, onComplete }) {
             </div>
             <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: T.text, marginBottom: 12 }}>Congratulations!</h2>
             <p style={{ fontSize: '0.9rem', color: T.textSub, lineHeight: 1.7, marginBottom: 8 }}>
-              Your artist portal is all set up. You are ready to share your Islamic content
+              Your Munshid Studio is all set up. You’re ready to share your voice
               with the Nashidify community.
             </p>
             <p style={{ fontSize: '0.85rem', color: T.gold, fontStyle: 'italic', marginBottom: 28 }}>

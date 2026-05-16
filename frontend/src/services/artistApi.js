@@ -87,6 +87,24 @@ const artistApi = {
     return res.data
   },
 
+  // AI Growth Coach (Munshid)
+  getGrowthCoach: async (period = '30d') => {
+    const res = await ax.get('/artist/growth-coach', { params: { period } })
+    return res.data
+  },
+
+  // AI-assisted upload (Munshid) — suggest title/category/moods/tags
+  aiSuggestMetadata: async (payload) => {
+    const res = await ax.post('/artist/ai-suggest-metadata', payload)
+    return res.data
+  },
+
+  // AI Discovery Boost (Munshid) — where to reach more of the right listeners
+  getDiscoveryBoost: async (period = '30d') => {
+    const res = await ax.get('/artist/discovery-boost', { params: { period } })
+    return res.data
+  },
+
   // Onboarding
   getOnboardingState: async () => {
     const res = await ax.get('/artist/onboarding/state')
@@ -110,4 +128,9 @@ const artistApi = {
   },
 }
 
+// `munshidApi` is the forward name for the Munshid program. The HTTP
+// endpoints stay `/artist/*` until the backend route rename (Inc 6) — this
+// alias lets new Munshid code import `munshidApi` now with zero breakage,
+// and gives one place to flip the paths later.
+export const munshidApi = artistApi
 export default artistApi
