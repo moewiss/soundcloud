@@ -775,6 +775,55 @@ function MiniBarChart({ items = [], color = T.accent, maxItems = 10 }) {
   )
 }
 
+/* ── AI Growth Coach (Munshid) — personal growth plan from analytics ── */
+function GrowthCoachCard({ period }) {
+  const [st2, setSt2] = useState({ loading: true, coach: null, isPro: true })
+  useEffect(() => {
+    let alive = true
+    setSt2(s => ({ ...s, loading: true }))
+    artistApi.getGrowthCoach(period)
+      .then(r => { if (alive) setSt2({ loading: false, coach: r?.coach || null, isPro: r?.is_pro !== false }) })
+      .catch(() => { if (alive) setSt2({ loading: false, coach: null, isPro: true }) })
+    return () => { alive = false }
+  }, [period])
+  const { loading, coach, isPro } = st2
+  const prio = p => (p === 'high' ? '#ef4444' : p === 'medium' ? '#f59e0b' : T.accent)
+  return (
+    <Card style={{ marginBottom: 18, borderColor: 'rgba(232,101,58,0.28)', background: 'linear-gradient(135deg, rgba(232,101,58,0.08), transparent 60%)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <i className="fas fa-graduation-cap" style={{ color: '#E8653A' }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#E8653A' }}>AI Growth Coach</span>
+        <span style={{ fontFamily: 'Amiri, serif', fontSize: '0.95rem', color: T.gold, opacity: 0.85 }}>مدرّب النمو</span>
+      </div>
+      {loading ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8 }} />Analyzing your growth…</p>
+      ) : !isPro ? (
+        <p style={{ color: T.textSub, fontSize: '0.85rem', margin: '8px 0' }}>The AI Growth Coach is a <strong style={{ color: T.gold }}>Munshid</strong> feature — a personal plan to grow your audience.</p>
+      ) : !coach || !coach.headline ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}>Your coaching plan appears here as your activity grows — keep publishing consistently.</p>
+      ) : (
+        <>
+          <h3 style={{ fontSize: '1.05rem', color: T.text, margin: '6px 0 4px' }}>{coach.headline}</h3>
+          {coach.focus && <div style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, color: '#E8653A', background: 'rgba(232,101,58,0.12)', border: '1px solid rgba(232,101,58,0.25)', borderRadius: 999, padding: '3px 10px', margin: '4px 0 12px' }}>Focus: {coach.focus}</div>}
+          <div style={{ display: 'grid', gap: 8 }}>
+            {(coach.steps || []).map((s, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
+                <span style={{ width: 6, borderRadius: 3, background: prio(s.priority), flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: T.text }}>{s.title}</div>
+                  {s.why && <div style={{ fontSize: '0.78rem', color: T.textMuted, marginTop: 2 }}>{s.why}</div>}
+                  {s.action && <div style={{ fontSize: '0.82rem', color: T.accentLight, marginTop: 4 }}><i className="fas fa-arrow-right" style={{ marginRight: 6, fontSize: '0.7rem' }} />{s.action}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {coach.encouragement && <p style={{ fontSize: '0.82rem', color: T.textSub, fontStyle: 'italic', marginTop: 12, marginBottom: 0 }}>{coach.encouragement}</p>}
+        </>
+      )}
+    </Card>
+  )
+}
+
 /* ── Pro Gate — blurred overlay for locked sections ── */
 function ProGate({ children, title, isPro }) {
   const navigate = useNavigate()
@@ -1031,6 +1080,9 @@ function AnalyticsSection() {
           ))}
         </div>
       </div>
+
+      {/* ═══ AI GROWTH COACH (Munshid) ═══ */}
+      <GrowthCoachCard period={period} />
 
       {/* ═══ AI PERFORMANCE SCORE (Pro) ═══ */}
       {isPro && aiSummary.score > 0 && (

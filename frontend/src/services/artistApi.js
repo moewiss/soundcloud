@@ -87,6 +87,12 @@ const artistApi = {
     return res.data
   },
 
+  // AI Growth Coach (Munshid)
+  getGrowthCoach: async (period = '30d') => {
+    const res = await ax.get('/artist/growth-coach', { params: { period } })
+    return res.data
+  },
+
   // Onboarding
   getOnboardingState: async () => {
     const res = await ax.get('/artist/onboarding/state')
