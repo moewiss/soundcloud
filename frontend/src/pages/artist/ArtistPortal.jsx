@@ -880,10 +880,10 @@ function GrowthCoachCard({ period }) {
   const { loading, coach, isPro } = st2
   const prio = p => (p === 'high' ? '#ef4444' : p === 'medium' ? '#f59e0b' : T.accent)
   return (
-    <Card style={{ marginBottom: 18, borderColor: 'rgba(232,101,58,0.28)', background: 'linear-gradient(135deg, rgba(232,101,58,0.08), transparent 60%)' }}>
+    <Card style={{ marginBottom: 18, borderColor: 'rgba(197,164,73,0.30)', background: 'linear-gradient(135deg, rgba(197,164,73,0.09), transparent 60%)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-        <i className="fas fa-graduation-cap" style={{ color: '#E8653A' }} />
-        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#E8653A' }}>AI Growth Coach</span>
+        <i className="fas fa-graduation-cap" style={{ color: T.gold }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: T.gold }}>AI Growth Coach</span>
         <span style={{ fontFamily: 'Amiri, serif', fontSize: '0.95rem', color: T.gold, opacity: 0.85 }}>مدرّب النمو</span>
       </div>
       {loading ? (
@@ -895,7 +895,7 @@ function GrowthCoachCard({ period }) {
       ) : (
         <>
           <h3 style={{ fontSize: '1.05rem', color: T.text, margin: '6px 0 4px' }}>{coach.headline}</h3>
-          {coach.focus && <div style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, color: '#E8653A', background: 'rgba(232,101,58,0.12)', border: '1px solid rgba(232,101,58,0.25)', borderRadius: 999, padding: '3px 10px', margin: '4px 0 12px' }}>Focus: {coach.focus}</div>}
+          {coach.focus && <div style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, color: T.gold, background: 'rgba(197,164,73,0.14)', border: '1px solid rgba(197,164,73,0.28)', borderRadius: 999, padding: '3px 10px', margin: '4px 0 12px' }}>Focus: {coach.focus}</div>}
           <div style={{ display: 'grid', gap: 8 }}>
             {(coach.steps || []).map((s, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
@@ -927,10 +927,10 @@ function DiscoveryBoostCard({ period }) {
   }, [period])
   const { loading, boost, isPro } = st3
   return (
-    <Card style={{ marginBottom: 18, borderColor: 'rgba(58,160,232,0.28)', background: 'linear-gradient(135deg, rgba(58,160,232,0.08), transparent 60%)' }}>
+    <Card style={{ marginBottom: 18, borderColor: 'rgba(197,164,73,0.30)', background: 'linear-gradient(135deg, rgba(197,164,73,0.09), transparent 60%)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-        <i className="fas fa-bullseye" style={{ color: '#3AA0E8' }} />
-        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#3AA0E8' }}>AI Discovery Boost</span>
+        <i className="fas fa-bullseye" style={{ color: T.gold }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: T.gold }}>AI Discovery Boost</span>
         <span style={{ fontFamily: 'Amiri, serif', fontSize: '0.95rem', color: T.gold, opacity: 0.85 }}>توسيع الوصول</span>
       </div>
       {loading ? (
@@ -943,10 +943,10 @@ function DiscoveryBoostCard({ period }) {
         <>
           {boost.summary && <p style={{ fontSize: '0.92rem', color: T.text, margin: '6px 0 10px', lineHeight: 1.55 }}>{boost.summary}</p>}
           {boost.best_track && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(58,160,232,0.10)', border: '1px solid rgba(58,160,232,0.25)', marginBottom: 12 }}>
-              <i className="fas fa-star" style={{ color: '#3AA0E8', marginTop: 3, fontSize: '0.8rem' }} />
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(197,164,73,0.12)', border: '1px solid rgba(197,164,73,0.28)', marginBottom: 12 }}>
+              <i className="fas fa-star" style={{ color: T.gold, marginTop: 3, fontSize: '0.8rem' }} />
               <div>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: '#3AA0E8' }}>Worth promoting</div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: T.gold }}>Worth promoting</div>
                 <div style={{ fontSize: '0.88rem', color: T.text, marginTop: 2 }}>{boost.best_track}</div>
               </div>
             </div>
@@ -954,7 +954,7 @@ function DiscoveryBoostCard({ period }) {
           <div style={{ display: 'grid', gap: 8 }}>
             {(boost.opportunities || []).map((o, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
-                <span style={{ width: 6, borderRadius: 3, background: '#3AA0E8', flexShrink: 0 }} />
+                <span style={{ width: 6, borderRadius: 3, background: T.gold, flexShrink: 0 }} />
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '0.88rem', color: T.text }}>{o.audience}</div>
                   {o.why && <div style={{ fontSize: '0.78rem', color: T.textMuted, marginTop: 2 }}>{o.why}</div>}
@@ -966,7 +966,7 @@ function DiscoveryBoostCard({ period }) {
           {(boost.suggested_categories || []).length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
               {(boost.suggested_categories || []).map((c, i) => (
-                <span key={i} style={{ fontSize: '0.74rem', fontWeight: 600, color: '#3AA0E8', background: 'rgba(58,160,232,0.12)', border: '1px solid rgba(58,160,232,0.25)', borderRadius: 999, padding: '3px 10px' }}>{c}</span>
+                <span key={i} style={{ fontSize: '0.74rem', fontWeight: 600, color: T.gold, background: 'rgba(197,164,73,0.14)', border: '1px solid rgba(197,164,73,0.28)', borderRadius: 999, padding: '3px 10px' }}>{c}</span>
               ))}
             </div>
           )}
@@ -2980,7 +2980,7 @@ function UploadForm({ track, onSuccess, onCancel }) {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
         <button type="button" onClick={aiSuggest} disabled={aiBusy} style={{
           display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 999,
-          border: '1px solid rgba(232,101,58,0.35)', background: 'rgba(232,101,58,0.10)', color: '#E8653A',
+          border: '1px solid rgba(197,164,73,0.38)', background: 'rgba(197,164,73,0.12)', color: T.gold,
           fontWeight: 700, fontSize: '0.78rem', cursor: aiBusy ? 'default' : 'pointer', opacity: aiBusy ? 0.6 : 1,
           fontFamily: 'inherit',
         }}>
