@@ -824,6 +824,67 @@ function GrowthCoachCard({ period }) {
   )
 }
 
+function DiscoveryBoostCard({ period }) {
+  const [st3, setSt3] = useState({ loading: true, boost: null, isPro: true })
+  useEffect(() => {
+    let alive = true
+    setSt3(s => ({ ...s, loading: true }))
+    artistApi.getDiscoveryBoost(period)
+      .then(r => { if (alive) setSt3({ loading: false, boost: r?.boost || null, isPro: r?.is_pro !== false }) })
+      .catch(() => { if (alive) setSt3({ loading: false, boost: null, isPro: true }) })
+    return () => { alive = false }
+  }, [period])
+  const { loading, boost, isPro } = st3
+  return (
+    <Card style={{ marginBottom: 18, borderColor: 'rgba(58,160,232,0.28)', background: 'linear-gradient(135deg, rgba(58,160,232,0.08), transparent 60%)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <i className="fas fa-bullseye" style={{ color: '#3AA0E8' }} />
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#3AA0E8' }}>AI Discovery Boost</span>
+        <span style={{ fontFamily: 'Amiri, serif', fontSize: '0.95rem', color: T.gold, opacity: 0.85 }}>توسيع الوصول</span>
+      </div>
+      {loading ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}><i className="fas fa-circle-notch fa-spin" style={{ marginRight: 8 }} />Finding new listeners for you…</p>
+      ) : !isPro ? (
+        <p style={{ color: T.textSub, fontSize: '0.85rem', margin: '8px 0' }}>AI Discovery Boost is a <strong style={{ color: T.gold }}>Munshid</strong> feature — find where your work can reach more of the right listeners.</p>
+      ) : !boost || (!boost.summary && !(boost.opportunities || []).length) ? (
+        <p style={{ color: T.textMuted, fontSize: '0.85rem', margin: '8px 0' }}>Discovery suggestions appear here as your catalogue grows — keep publishing and tagging your work well.</p>
+      ) : (
+        <>
+          {boost.summary && <p style={{ fontSize: '0.92rem', color: T.text, margin: '6px 0 10px', lineHeight: 1.55 }}>{boost.summary}</p>}
+          {boost.best_track && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(58,160,232,0.10)', border: '1px solid rgba(58,160,232,0.25)', marginBottom: 12 }}>
+              <i className="fas fa-star" style={{ color: '#3AA0E8', marginTop: 3, fontSize: '0.8rem' }} />
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: '#3AA0E8' }}>Worth promoting</div>
+                <div style={{ fontSize: '0.88rem', color: T.text, marginTop: 2 }}>{boost.best_track}</div>
+              </div>
+            </div>
+          )}
+          <div style={{ display: 'grid', gap: 8 }}>
+            {(boost.opportunities || []).map((o, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: T.bgHighlight, border: `1px solid ${T.border}` }}>
+                <span style={{ width: 6, borderRadius: 3, background: '#3AA0E8', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: T.text }}>{o.audience}</div>
+                  {o.why && <div style={{ fontSize: '0.78rem', color: T.textMuted, marginTop: 2 }}>{o.why}</div>}
+                  {o.action && <div style={{ fontSize: '0.82rem', color: T.accentLight, marginTop: 4 }}><i className="fas fa-arrow-right" style={{ marginRight: 6, fontSize: '0.7rem' }} />{o.action}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {(boost.suggested_categories || []).length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+              {(boost.suggested_categories || []).map((c, i) => (
+                <span key={i} style={{ fontSize: '0.74rem', fontWeight: 600, color: '#3AA0E8', background: 'rgba(58,160,232,0.12)', border: '1px solid rgba(58,160,232,0.25)', borderRadius: 999, padding: '3px 10px' }}>{c}</span>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
 /* ── Pro Gate — blurred overlay for locked sections ── */
 function ProGate({ children, title, isPro }) {
   const navigate = useNavigate()
@@ -1083,6 +1144,9 @@ function AnalyticsSection() {
 
       {/* ═══ AI GROWTH COACH (Munshid) ═══ */}
       <GrowthCoachCard period={period} />
+
+      {/* ═══ AI DISCOVERY BOOST (Munshid) ═══ */}
+      <DiscoveryBoostCard period={period} />
 
       {/* ═══ AI PERFORMANCE SCORE (Pro) ═══ */}
       {isPro && aiSummary.score > 0 && (

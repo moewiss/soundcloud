@@ -99,6 +99,12 @@ const artistApi = {
     return res.data
   },
 
+  // AI Discovery Boost (Munshid) — where to reach more of the right listeners
+  getDiscoveryBoost: async (period = '30d') => {
+    const res = await ax.get('/artist/discovery-boost', { params: { period } })
+    return res.data
+  },
+
   // Onboarding
   getOnboardingState: async () => {
     const res = await ax.get('/artist/onboarding/state')
