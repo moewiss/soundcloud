@@ -65,16 +65,36 @@ review inside the txn before COMMIT — see the file).
 `docker restart sc_app` (clears OPcache so STEP 2 code goes live with
 STEP 3 data atomically). Then smoke test (STEP 6).
 
-## STEP 5 — Stripe & Store (COSMETIC ONLY — your consoles, optional)
-Not required for function. For correct invoices/store copy:
-- **Stripe dashboard:** rename the existing *Artist Pro* product →
-  **"Munshid"**. Do **not** create new prices or archive the old product
-  (subscriptions reference the price, renaming is display-only).
-- **App Store Connect / Play Console:** rename the creator subscription's
-  **display name** → "Munshid". Keep the **product IDs unchanged**
-  (changing IDs = new products + review; renaming display text generally
-  does not). Update the localized description.
-- No mobile build change needed for the rename (IAP IDs stable).
+## STEP 5 — Stripe & Store (VERIFIED 2026-05-16 — mostly already done)
+Audited live. Findings:
+- **Stripe: ALREADY DONE — no action required.** The live Munshid
+  checkout (all regional tiers t1–t4 via `plan_prices`) points to product
+  `prod_UJZnJN9PYmP0e1` = **"Nashidify Munshid"**; active prices are
+  nicknamed "Munshid t1/t2/t3 …"; backend `plans.name` = "Munshid".
+  Invoices/dashboard already read "Nashidify Munshid". 0 active/trialing
+  Stripe subscriptions, 0 in local `subscriptions`, 1 (non-paying)
+  munshid user. The earlier "rename Artist Pro product" was completed in
+  the v1.0.0 pricing reconciliation.
+  - *Optional, zero-risk:* add nicknames to the 2 t4 Munshid prices
+    (`price_1TKx6OItw8IgGxgnWd4zRKkb` annual, `…ndigQIhk6` monthly) which
+    show "(none)" — dashboard-only cosmetic.
+  - *Do NOT archive* the stale old "Nashidify Artist"/"Artist Pro"/
+    duplicate "Plus" products. Cosmetic clutter only; archiving has
+    non-zero price/product-dependency risk for zero user benefit. RUNBOOK
+    rule stands: no archiving.
+- **App Store / Play IAP: N/A — nothing to rename.** The app subscribes
+  via **Stripe** (`@stripe/stripe-react-native` Payment Sheet); there is
+  **no IAP library** (no `react-native-iap`/StoreKit/Play Billing) and
+  therefore **no App Store/Play subscription product** exists to rename.
+- **The only real store-side item (yours):** the App Store Connect / Play
+  Console **store listing copy** (app description, promo text,
+  screenshots, "What's New") — if any of it says "Artist", update it to
+  "Munshid". Not visible from the repo; check both consoles' listing
+  text. No app binary/build change needed.
+- **Heads-up (separate, pre-existing):** Apple guideline 3.1.1 generally
+  requires IAP for digital subscriptions; Stripe-based subscriptions in
+  the iOS app are a known review/removal risk. Not caused by the Munshid
+  rename and out of scope here, but relevant before scaling paid signups.
 
 ## STEP 6 — Smoke test (post-deploy)
 - A `munshid` user: portal loads, isPro true, promotions/wallet/2FA gates pass.
